@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Websocket Based HTML5 IRC Client</title>
+    </head>
+    <body style="font-family: Lekton; font-size: 24pt">
+        <p style="width: 800px">Websocket Based HTML5 IRC Client</p>
+        <div id="chatbox" style="font-size: 14pt; height: 500px; width: 800px; overflow: scroll; border: 1px solid black"></div>
+        <script type="text/javascript">
+            var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
+            ws.onmessage = function(evt){
+                x = document.createElement("p");
+                x.innerHTML = evt.data;
+                document.getElementById("chatbox").appendChild(x);
+            }
+        </script>
+    </body>
+</html>
