@@ -15,6 +15,13 @@ import tornado.ioloop
 import tornado.iostream
 import socket
 import string
+import json
+
+class IRCMessage(object):
+  def __init__(self,prefix, command, args):
+    self.prefix = prefix
+    self.command = command
+    self.args = args
 
 class IRCClient:
   def ProcessServerMessage(self, msg):
@@ -29,6 +36,20 @@ class IRCClient:
         print 'Processing PING msg for ' + payload
         return 'PONG ' + payload
     return None
+
+  def ParseMessage(self, msg):
+    prefix = ''
+    trailing = []
+    if msg[0] == ':':
+        prefix, msg = msg[1:].split(' ', 1)
+    if msg.find(' :') != -1:
+        msg, trailing = msg.split(' :', 1)
+        args = msg.split()
+        args.append(trailing)
+    else:
+        args = msg.split()
+    command = args.pop(0)
+    return IRCMessage(prefix, command, args)
 
   def ProcessClientCommand(self, msg):
     if msg.startswith('/'):
@@ -50,7 +71,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     self.stream.read_until('\r\n', self.on_line)
 
   def on_line(self, data):
-    print data
+    #print data
+    ircMessage = self.IRCClient.ParseMessage(data.strip())
+    print json.dumps(vars(ircMessage),sort_keys=True, indent=4)
     self.write_message(u"MSG: " + data)
     response = self.IRCClient.ProcessServerMessage(data)
     if response is not None:
@@ -74,6 +97,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
   def on_close(self):
     print 'websocket close'
+    self.stream.close()
  
 
 def main():
