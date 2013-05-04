@@ -5,14 +5,30 @@
     </head>
     <body style="font-family: Lekton; font-size: 24pt">
         <p style="width: 800px">Websocket Based HTML5 IRC Client</p>
-        <div id="chatbox" style="font-size: 14pt; height: 500px; width: 800px; overflow: scroll; border: 1px solid black"></div>
+        <canvas id="IrcCanvas" width="1200" height="500"></canvas>
+        <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
+            <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
+            <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
+        </form>
         <script type="text/javascript">
-            var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
-            ws.onmessage = function(evt){
-                x = document.createElement("p");
-                x.innerHTML = evt.data;
-                document.getElementById("chatbox").appendChild(x);
-            }
+		var canvas = document.getElementById('IrcCanvas');
+		var context = canvas.getContext('2d');
+		var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
+		var x = 0;
+		var y = 0;
+		ws.onmessage = function(evt)
+		{
+			context.font = '11pt Calibri';
+			context.fillStyle = 'blue';
+			context.fillText(evt.data, x, y);
+			++x;
+			y = y + 2;
+		}
+		function DispatchText(){
+			var userInput = document.getElementById("message").value;
+			document.getElementById("message").value = "";
+			ws.send(userInput);
+		}
         </script>
     </body>
 </html>
