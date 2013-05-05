@@ -16,6 +16,9 @@ import tornado.iostream
 import socket
 import string
 import json
+import time
+import datetime
+import calendar
 
 
 class IRCMessage(object):
@@ -23,6 +26,8 @@ class IRCMessage(object):
     self.prefix = prefix
     self.command = command
     self.args = args
+    self.gmt = calendar.timegm(time.gmtime())
+    self.friendly_time = time.strftime('%H:%M:%S')
     if(self.prefix is not None and self.prefix.find('!') != -1):
       (self.nick, self.host) = string.split(prefix,'!',maxsplit=1)
     else:

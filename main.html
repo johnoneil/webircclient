@@ -3,8 +3,8 @@
     <head>
         <title>Websocket Based HTML5 IRC Client</title>
     </head>
-    <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 24pt">
-        <p style="width: 800px">Websocket Based HTML5 IRC Client</p>
+    <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 24pt" bgcolor="#151515">
+        <p style="color:#FFC000;width: 800px">Websocket Based HTML5 IRC Client</p>
         <canvas id="IrcCanvas" width="1200" height="500"></canvas>
         <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
             <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
@@ -19,9 +19,9 @@
 		ws.onmessage = function(evt)
 		{
 			var p = JSON.parse(evt.data);
-			var line = p.nick + ' : ' + p.args[1]
+			var line = p.friendly_time + ' | ' + p.nick + ' | ' + p.args[1]
 			context.font = '12pt Helvetica, Arial, sans-serif';
-			context.fillStyle = 'blue';
+			context.fillStyle = 'white';
 			context.fillText(line, x, y);
 			y = y + 15;
 		}
