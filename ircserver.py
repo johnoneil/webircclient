@@ -17,11 +17,17 @@ import socket
 import string
 import json
 
+
 class IRCMessage(object):
   def __init__(self,prefix, command, args):
     self.prefix = prefix
     self.command = command
     self.args = args
+    if(self.prefix is not None and self.prefix.find('!') != -1):
+      (self.nick, self.host) = string.split(prefix,'!',maxsplit=1)
+    else:
+      self.nick = ''
+      self.host = ''
 
 class IRCClient:
   def ProcessServerMessage(self, msg):
@@ -48,7 +54,7 @@ class IRCClient:
         args.append(trailing)
     else:
         args = msg.split()
-    command = args.pop(0)
+    command = args.pop(0).upper().strip()
     return IRCMessage(prefix, command, args)
 
   def ProcessClientCommand(self, msg):
@@ -71,10 +77,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     self.stream.read_until('\r\n', self.on_line)
 
   def on_line(self, data):
-    #print data
     ircMessage = self.IRCClient.ParseMessage(data.strip())
-    print json.dumps(vars(ircMessage),sort_keys=True, indent=4)
-    self.write_message(u"MSG: " + data)
+    print ircMessage.command
+    if ircMessage.command == 'PRIVMSG':
+      json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
+      print(json_data)
+      self.write_message(json_data)
+    #sometimes respond to server messages without involving the client (PING msg)
     response = self.IRCClient.ProcessServerMessage(data)
     if response is not None:
       self.stream.write(response)
