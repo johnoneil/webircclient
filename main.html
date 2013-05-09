@@ -2,33 +2,55 @@
 <html>
     <head>
         <title>Websocket Based HTML5 IRC Client</title>
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
     </head>
     <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 24pt" bgcolor="#151515">
         <p style="color:#FFC000;width: 800px">Websocket Based HTML5 IRC Client</p>
-        <canvas id="IrcCanvas" width="1200" height="500"></canvas>
+        <div id="viz"></div>
         <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
             <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
             <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
         </form>
         <script type="text/javascript">
-		var canvas = document.getElementById('IrcCanvas');
-		var context = canvas.getContext('2d');
+		var sampleSVG = d3.select("#viz")
+			.append("svg")
+			.attr("width", 800)
+			.attr("height", 500);
 		var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
-		var x = 15;
-		var y = 15;
+		var message_list = new Array();
 		ws.onmessage = function(evt)
 		{
 			var p = JSON.parse(evt.data);
-			var line = p.friendly_time + ' | ' + p.nick + ' | ' + p.args[1]
-			context.font = '12pt Helvetica, Arial, sans-serif';
-			context.fillStyle = 'white';
-			context.fillText(line, x, y);
-			y = y + 15;
+			//var line = p.friendly_time + ' | ' + p.nick + ' | ' + p.args[1];
+			message_list.push(p);
+			if(message_list.length > 10){message_list.shift();}
+			Update();
 		}
 		function DispatchText(){
 			var userInput = document.getElementById("message").value;
 			document.getElementById("message").value = "";
 			ws.send(userInput);
+		}
+		function Update(){
+			var texts = sampleSVG.selectAll("text").data(message_list, function(d) { return d.friendly_time; });
+
+			//texts.attr("class", "update");
+
+			texts.enter().append("text")
+			.text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
+			.attr("x", 15)
+			.attr("y", 600 )
+			.style("fill", function() {
+				return "hsl(" + Math.random() * 360 + ",100%,50%)";})
+			.style("font-size", "14px");
+			
+			texts.text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
+			.transition()
+			.delay(100)
+			.duration(500)    
+			.attr("y", function(d,i){return (i+1)*18;});
+
+			texts.exit().remove();
 		}
         </script>
     </body>
