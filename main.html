@@ -32,25 +32,29 @@
 			ws.send(userInput);
 		}
 		function Update(){
-			var texts = sampleSVG.selectAll("text").data(message_list, function(d) { return d.friendly_time; });
+			var g = sampleSVG.selectAll("g").data(message_list, function(d) { return d.friendly_time; });
 
-			//texts.attr("class", "update");
+			var enter_g = g.enter().append("g").attr("transform","translate(15,600)");
+			enter_g.append("rect")
+			.attr("rx", 6)
+			.attr("ry", 6)
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", 300)
+			.attr("height", 25)
+			.style("fill","black")
+			.style("stroke","white");
+			enter_g.append("text").text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
+			.style("font-size", "14px")
+			.style("fill","white")
+			.attr("x",15)
+			.attr("y","15");
 
-			texts.enter().append("text")
-			.text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
-			.attr("x", 15)
-			.attr("y", 600 )
-			.style("fill", function() {
-				return "hsl(" + Math.random() * 360 + ",100%,50%)";})
-			.style("font-size", "14px");
+			g.transition()
+			.duration(500)
+			.attr("transform", function(d,i){return "translate(15,"+ (i+1)*30 +")";});
 			
-			texts.text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
-			.transition()
-			.delay(100)
-			.duration(500)    
-			.attr("y", function(d,i){return (i+1)*18;});
-
-			texts.exit().remove();
+			g.exit().remove();
 		}
         </script>
     </body>
