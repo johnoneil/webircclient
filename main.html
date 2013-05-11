@@ -3,8 +3,26 @@
     <head>
         <title>Websocket Based HTML5 IRC Client</title>
 	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+	  <style type="text/css">
+		div{
+		display:inline;
+		}
+		div.nick {
+		color: #FFC000;
+		font-family:arial;
+		}
+		div.timestamp {
+		color : white;
+		font-family:arial;
+		}
+		div.chat {
+		color : white;
+		font-family:arial;
+		}
+		
+	</style>
     </head>
-    <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 24pt" bgcolor="#151515">
+    <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 12pt" bgcolor="#151515">
         <p style="color:#FFC000;width: 800px">Websocket Based HTML5 IRC Client</p>
         <div id="viz"></div>
         <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
@@ -21,7 +39,6 @@
 		ws.onmessage = function(evt)
 		{
 			var p = JSON.parse(evt.data);
-			//var line = p.friendly_time + ' | ' + p.nick + ' | ' + p.args[1];
 			message_list.push(p);
 			if(message_list.length > 10){message_list.shift();}
 			Update();
@@ -34,25 +51,29 @@
 		function Update(){
 			var g = sampleSVG.selectAll("g").data(message_list, function(d) { return d.friendly_time; });
 
-			var enter_g = g.enter().append("g").attr("transform","translate(15,600)");
+			var enter_g = g.enter().append("g").attr("transform","translate(0,0)");
+
 			enter_g.append("rect")
 			.attr("rx", 6)
 			.attr("ry", 6)
 			.attr("x", 0)
 			.attr("y", 0)
-			.attr("width", 300)
-			.attr("height", 25)
+			.attr("width", 700)
+			.attr("height", 24)
 			.style("fill","black")
 			.style("stroke","white");
-			enter_g.append("text").text(function(d){return d.friendly_time + ' | ' + d.nick + ' | ' + d.args[1];})
-			.style("font-size", "14px")
-			.style("fill","white")
-			.attr("x",15)
-			.attr("y","15");
 
+			enter_g.append('foreignObject')
+			.attr('x', 0)
+			.attr('y', 0)
+			.attr('width', 700)
+			.attr('height', 24)
+			.append("xhtml:body")
+			.html(function(d) { return '<div class="timestamp">' + d.friendly_time + ' | </div><div class="nick">' + d.nick + '</div><div class="chat"> | ' + d.args[1] + '</div>'; });
+			
 			g.transition()
 			.duration(500)
-			.attr("transform", function(d,i){return "translate(15,"+ (i+1)*30 +")";});
+			.attr("transform", function(d,i){return "translate(15,"+ (i+1)*28 +")";});
 			
 			g.exit().remove();
 		}
