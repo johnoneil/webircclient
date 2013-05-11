@@ -89,7 +89,7 @@
 		function FilterJSON(data)
 		{
 			var previous_chat = data.args[1];
-			data.args[1] = previous_chat.replace(/(http:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<img src='$1' align='top' alt=''>");
+			data.args[1] = previous_chat.replace(/(http:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<a href='$1' target='_blank'><img src='$1' align='top' alt=''></a>");
 		}
         </script>
     </body>
