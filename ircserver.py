@@ -19,6 +19,7 @@ import json
 import time
 import datetime
 import calendar
+import os
 
 
 class IRCMessage(object):
@@ -73,6 +74,10 @@ class MainHandler(tornado.web.RequestHandler):
 	def get(self):
 		self.render("main.html")
 
+class YotsubaFrontend(tornado.web.RequestHandler):
+	def get(self):
+		self.render("yotsuba.html")
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
   def initialize(self):
     print 'initialize called'
@@ -117,7 +122,10 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 def main():
   application = tornado.web.Application([
       (r"/", MainHandler),
+      (r"/yotsuba",YotsubaFrontend),
       (r"/websocket", WebSocketHandler),
+      (r"/css/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/css'}),
+      (r"/image/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/image'}),
   ])
   application.listen(8888)
   tornado.ioloop.IOLoop.instance().start() 

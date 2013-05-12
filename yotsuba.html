@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Websocket Based HTML5 IRC Client</title>
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+	<link href="css/yotsubanew.css" rel="stylesheet" type="text/css">
+    </head>
+    <body>
+	<div class="boardBanner">
+		<!--<img class="title" src="//static.4chan.org/image/title/66.jpg" alt="4chan">-->
+		<div id="channel_name" class="boardTitle">Channel Name</div>
+		<div class="boardSubtitle">The stories and information posted here are artistic works of fiction and falsehood.<br>Only a fool would take anything posted here as fact.</div>
+	</div>
+        <div id="chat"></div>
+        <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
+            <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
+            <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
+        </form>
+        <script type="text/javascript">
+		var chat_div = d3.select("#chat");
+
+		var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
+		var message_list = new Array();
+		ws.onmessage = function(evt)
+		{
+			var p = JSON.parse(evt.data);
+
+			//for now change the page name to the channel name
+			d3.select('#channel_name').text(p.args[0]);
+			FilterJSON(p);
+			message_list.push(p);
+			if(message_list.length > 10){message_list.shift();}
+			Update();
+		}
+		function DispatchText(){
+			var userInput = document.getElementById("message").value;
+			document.getElementById("message").value = "";
+			ws.send(userInput);
+		}
+		function Update(){
+
+			var chat = chat_div.selectAll("#postContainer").data(message_list, function(d) { return d.friendly_time; });
+
+			var replycontainer = chat.enter()
+			.append("div")
+			.attr("class","postContainer ReplyContainer")
+			.attr("id","postContainer");
+			
+			replycontainer
+			.append("div")
+			.attr("class","sideArrows")
+			.text(">>");
+			var post_reply = replycontainer.append("div")
+			.attr("class","post reply");
+			//.text(function(d){return d.args[1];});
+			post_reply.append("blockquote")
+			.attr("class","postMessage")
+			.attr("id",function(d) { return d.friendly_time; })
+			.html(function(d){return d.args[1];});
+
+			chat.exit().remove();
+		}
+		//filter the incoming chat in the client so we can more closely control switching on/off
+		//various filters
+		function FilterJSON(data)
+		{
+			var previous_chat = data.args[1];
+			data.args[1] = previous_chat.replace(/(https?:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<a href='$1' target='_blank'><img src='$1' align='top' alt=''></a>");
+		}
+
+        </script>
+    </body>
+</html>
