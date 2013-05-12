@@ -52,7 +52,15 @@
 			.text(">>");
 			var post_reply = replycontainer.append("div")
 			.attr("class","post reply");
-			//.text(function(d){return d.args[1];});
+			var postinfo = post_reply.append("div")
+			.attr("class","postInfo desktop");
+			postinfo.append("span").attr("class","subject").text(function(d){return d.args[0];});
+			var nameblock = postinfo.append("span").attr("class","nameBlock");
+			nameblock.append("span").attr("class","name").text(function(d) { return d.nick; });
+			nameblock.append("span").attr("class","posteruid").text(function(d) { return "(ID:" + d.command + ")"; });
+			postinfo.append("span").attr("class","dateTime").text(function(d) { return d.friendly_time; });
+			postinfo.append("span").attr("class","postNum Desktop").text("No.xxxxxxxx");
+			
 			post_reply.append("blockquote")
 			.attr("class","postMessage")
 			.attr("id",function(d) { return d.friendly_time; })
