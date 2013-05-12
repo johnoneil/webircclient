@@ -7,6 +7,9 @@
 		div{
 		display:inline;
 		}
+		img{
+		max-height:85px;
+		}
 		div.nick {
 		color: #FFC000;
 		font-family:arial;
@@ -60,7 +63,7 @@
 
 			var enter_g = g.enter().append("g").attr("transform","translate(15,600)");
 
-			enter_g.append("rect")
+			rects = enter_g.append("rect")
 			.attr("rx", 6)
 			.attr("ry", 6)
 			.attr("x", 0)
@@ -70,17 +73,30 @@
 			.style("fill","black")
 			.style("stroke","white");
 
-			enter_g.append('foreignObject')
+			fo = enter_g.append('foreignObject')
 			.attr('x', 0)
 			.attr('y', 0)
 			.attr('width', 700)
-			.attr('height', 24)
-			.append("xhtml:body")
+			.attr('height',"28")
+			.style('padding','5px');
+
+			bodies = fo.append("xhtml:body")
 			.html(function(d) { return '<div class="timestamp">' + d.friendly_time + ' | </div><div class="nick">' + d.nick + '</div><div class="chat"> | ' + d.args[1] + '</div>'; });
 			
+			var bodies = g.selectAll("body");
+			fo.transition().duration(500).attr("height", function(d,i){return bodies[i][0].getBoundingClientRect().height;});
+			rects.transition().duration(500).attr("height", function(d,i){return bodies[i][0].getBoundingClientRect().height;});			
 			g.transition()
 			.duration(500)
-			.attr("transform", function(d,i){return "translate(15,"+ (i+1)*32 +")";});
+			.attr("transform",function(d,i){
+				var y = 15;
+				for(var pos = 0; pos < i; ++pos)
+				{
+					y = y + bodies[pos][0].getBoundingClientRect().height;
+				}
+				return "translate(15,"+ y +")";
+				});
+			//.attr("transform", function(d,i){return "translate(15,"+ (i+1)*32 +")";});
 			
 			g.exit().remove();
 		}
@@ -91,6 +107,7 @@
 			var previous_chat = data.args[1];
 			data.args[1] = previous_chat.replace(/(http:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<a href='$1' target='_blank'><img src='$1' align='top' alt=''></a>");
 		}
+
         </script>
     </body>
 </html>
