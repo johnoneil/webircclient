@@ -32,8 +32,6 @@
 		{
 			var p = JSON.parse(evt.data);
 
-			//for now change the page name to the channel name
-			d3.select('#channel_name').text(p.args[0]);
 			FilterJSON(p);
 			//message_list.push(p);
 			key = p.args[0];//channel
@@ -48,25 +46,37 @@
 			IRCMap[key].push(p);
 			if(IRCMap[key].length > 10){IRCMap[key].shift();}
 
-			//HACK: just keep incoming messages setting 'current channel' for now
-			current_chan = key;
-			//if( current_chan === key )
-			//{
+			if( current_chan === key )
+			{
 				Update();
-			//}
+			}
 		}
 		function DispatchText(){
 			var userInput = document.getElementById("message").value;
 			document.getElementById("message").value = "";
 			ws.send(userInput);
 		}
+
+		function OnSelectChannel(channel)
+		{
+			current_chan = channel;
+			Update();
+		}
 		function Update(){
+
+			//for now change the page name to the channel name
+			d3.select('#channel_name').text(current_chan);
 
 			//update the links at the top of the page for the curent channel list
 			var keys = Object.keys(IRCMap);
 			channels = chans.selectAll('a').data(keys);
-			var navbar = channels.enter().append('a').text(function(d,i){return '/ ' + d + ( i===keys.length-1 ? ' /' : '');})
-			channels.text(function(d,i){return '/ ' + d + ( i===keys.length-1 ? ' /' : ' ');});			
+			var navbar = channels.enter().append('a')
+			.attr("onClick",function(d){return "OnSelectChannel('"+ d + "')";})
+			.text(function(d,i){return '/ ' + d + ( i===keys.length-1 ? ' /' : '');})
+			channels.text(function(d,i)
+			{
+				return ( i===0 ? '[' : '') + d + ( i===keys.length-1 ? ']' : ' / ');
+			});			
 			channels.exit().remove();
 			
 			if(isEmpty(IRCMap) || current_chan === "" )

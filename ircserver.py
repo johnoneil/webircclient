@@ -70,6 +70,17 @@ class IRCClient:
       #TODO: send message to current channel
       pass
 
+  @staticmethod
+  def decode(bytes):
+    try:
+      text = bytes.decode('utf-8')
+    except UnicodeDecodeError:
+      try:
+        text = bytes.decode('iso-8859-1')
+      except UnicodeDecodeError:
+        text = bytes.decode('cp1252')
+    return text
+
 class MainHandler(tornado.web.RequestHandler):
 	def get(self):
 		self.render("main.html")
@@ -87,9 +98,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     self.stream.read_until('\r\n', self.on_line)
 
   def on_line(self, data):
-    ircMessage = self.IRCClient.ParseMessage(data.strip())
+    decoded_line = IRCClient.decode(data)
+    ircMessage = self.IRCClient.ParseMessage(decoded_line.strip())
     print ircMessage.command
     if ircMessage.command == 'PRIVMSG':
+      print ircMessage
       json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
       print(json_data)
       self.write_message(json_data)
