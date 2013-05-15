@@ -20,7 +20,74 @@ import time
 import datetime
 import calendar
 import os
+import re
 
+class IRC:
+  Symbols = {
+    u'\u0002':u'IRCBold', 
+    u'\u001f':u'IRCUnderline', 
+    u'\u001d':u'IRCItalic', 
+    u'\u0012':u'IRCReverseColor', 
+    u'\u000300':u'IRCWhite', 
+    u'\u000301':u'IRCBlack', 
+    u'\u000302':u'IRCDarkBlue', 
+    u'\u000303':u'IRCDarkGreen', 
+    u'\u000304':u'IRCLightRed', 
+    u'\u000305':u'IRCDarkRed', 
+    u'\u000306':u'IRCMagenta', 
+    u'\u000307':u'IRCOrange', 
+    u'\u000308':u'IRCYellow', 
+    u'\u000309':u'IRCLightGreen', 
+    u'\u000310':u'IRCCyan', 
+    u'\u000311':u'IRCLightCyan', 
+    u'\u000312':u'IRCLightBlue', 
+    u'\u000313':u'IRCLightMagenta', 
+    u'\u000314':u'IRCGray', 
+    u'\u000315':u'IRCLightGray'
+  }
+
+  @staticmethod
+  def FindNextMarkup(line):
+    first_hit = -1
+    key_hit = ''
+    for key in IRC.Symbols.iterkeys():
+      #print 'looking for key ' + key + 'in string ' + line
+      index = line.find(key)
+      #print 'key found at index ' + str(index) 
+      if index >= 0:
+        #print 'found key ' + key
+        if first_hit < 0:
+          first_hit = index
+          key_hit = key
+        elif index < first_hit:
+          first_hit = index
+          key_hit = key
+    #print 'FindNextMarkup returning ' + str(first_hit) + ' key ' + key_hit
+    return (first_hit,key_hit)
+    
+  @staticmethod
+  def MarkupToHTML(line):
+    span_class_list = []
+    while True:
+      (first_hit,key_hit) = IRC.FindNextMarkup(line)
+      if first_hit < 0 and len(span_class_list) == 0 :
+        break;
+      if first_hit < 0 and len(span_class_list) > 0:
+        line = line + '</span>'
+        break;
+      value_hit = IRC.Symbols[key_hit]
+      if( value_hit in span_class_list ):
+        span_class_list.remove(value_hit)
+      else:
+        span_class_list.append(value_hit)
+      if(len(span_class_list) > 0):
+        span_classes = ''
+        for c in span_class_list:
+          span_classes = span_classes + " " + c 
+        line = line.replace(key_hit,'</span><span class="' + span_classes +'">',1)
+      else:
+        line = line.replace(key_hit,'</span>',1)
+    return line
 
 class IRCMessage(object):
   def __init__(self,prefix, command, args):
@@ -72,6 +139,8 @@ class IRCClient:
 
   @staticmethod
   def decode(bytes):
+    #TODO: replace IRC specific formatting (bold, underline, colors)
+    #with HTML amenable markup
     try:
       text = bytes.decode('utf-8')
     except UnicodeDecodeError:
@@ -79,6 +148,17 @@ class IRCClient:
         text = bytes.decode('iso-8859-1')
       except UnicodeDecodeError:
         text = bytes.decode('cp1252')
+    return text
+
+  @staticmethod
+  def encode(bytes):
+    try:
+      text = bytes.encode('utf-8')
+    except UnicodeEncodeError:
+      try:
+        text = bytes.encode('iso-8859-1')
+      except UnicodeEncodeError:
+        text = bytes.encode('cp1252')
     return text
 
 class MainHandler(tornado.web.RequestHandler):
@@ -98,7 +178,30 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     self.stream.read_until('\r\n', self.on_line)
 
   def on_line(self, data):
+    #python isn't great with \r\n so replace them before anything else.
+    data = data.replace('\r\n', '\n')
     decoded_line = IRCClient.decode(data)
+
+    decoded_line = IRC.MarkupToHTML(decoded_line)
+
+    #decoded_line = re.sub(ur"\u0002(.*?)\u0002", ur'<span class="IRCBold">\1</span>', decoded_line)
+    #decoded_line = re.sub(ur"\u0002(.*?)$", ur'<span class="IRCBold">\1</span>', decoded_line)
+    #decoded_line = re.sub(ur"\u001f(.*?)\u001f", ur'<span class="IRCUnderline">\1</span>', decoded_line)
+    #decoded_line = re.sub(ur"\u001f(.*?)$", ur'<span class="IRCUnderline">\1</span>', decoded_line)
+
+    #define a dictionary of irc binary tags:
+    #dic['\u0002] = "IRCBold"
+    #start search through document for all keys. Upon key, add the key to our current key group
+    #at the first key, replace as <span class="key">
+    #if no more found, add </span>
+    #if more found, add next key switch to current key group (e.g. IRCBold IRCUnderlined)
+    #replce with closing and then opening span at tag change </span><span class="IRCBold IRCUnderlined">
+    #note that keys can both turn on and off some properties (like colors)
+    #if no more found, add </span>
+    #repeat
+
+    print decoded_line
+    
     ircMessage = self.IRCClient.ParseMessage(decoded_line.strip())
     print ircMessage.command
     if ircMessage.command == 'PRIVMSG':
