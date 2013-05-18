@@ -8,7 +8,10 @@
     </head>
     <body>
 	<span class="chans" id="channel_list"></span>
-	<h1><div id="channel_name" class="boardTitle">Channel Name</div></h1>
+	<div class="channel_header">
+		<div id="channel_name"> </div>
+		<div id="topic"> </div>
+	</div>
         <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
             <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
             <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
@@ -23,6 +26,7 @@
 
 		//Keep a dictionary of channel names to current channel message lists:
 		var IRCMap = [];
+		var topicMap = [];
 		var current_chan = "";
 		var buffer_legth = 200;
 		//var message_list = new Array();
@@ -31,6 +35,20 @@
 			var p = JSON.parse(evt.data);
 
 			FilterJSON(p);
+
+			if(p.command =='332' || p.command == 'TOPIC' )
+			{
+				topicMap[p.args[1]] = p.args[2];
+				Update();
+				return;
+			}
+			
+			//filter our currently unsupported messages
+			//if(p.command != 'PRIVMSG' || p.command != 'JOIN' ||
+			//p.command != 'QUIT')
+			//{
+			//	return;
+			//}
 
 			key = p.channel;//channel
 			if(current_chan === "")
@@ -62,6 +80,9 @@
 			//for now change the page name to the channel name
 			d3.select('#channel_name').text(current_chan);
 
+			//update the topic for this channel too
+			d3.select('#topic').html(topicMap[current_chan]);
+
 			//update the links at the top of the page for the curent channel list
 			var keys = Object.keys(IRCMap);
 			var channels = chan_div.selectAll('a').data(keys);
@@ -85,8 +106,8 @@
 			//var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.gmt; }).sort(d3.descending());//, function(d) { return d.friendly_time; });
 			var chat_rows_enter = chat_rows.enter().append('tr');//,'tr');
 
-			chat_rows_enter.append('td').attr('class','timestamp').text(function(d){ return d.friendly_time; });
-			chat_rows_enter.append('td').attr('class','nick').text(function(d){ return d.nick; });
+			chat_rows_enter.append('td').attr('class','timestamp').html(function(d){ return d.friendly_time; });
+			chat_rows_enter.append('td').attr('class','nick').html(function(d){ return d.nick; });
 			chat_rows_enter.append('td').attr('class','line').html(function(d){ return d.chat; });
 
 			//chat_rows.selectAll('.timestamp').text(function(d){ return d.friendly_time; });

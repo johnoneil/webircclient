@@ -45,6 +45,12 @@ class IRC:
     u'\u000314':u'IRCGray', 
     u'\u000315':u'IRCLightGray'
   }
+  Commands = {
+    u'TOPIC' : u'332',
+    u'JOIN' : u'JOIN',
+    u'PRIVMSG' : u'PRIVMSG',
+    u'QUIT' : u'QUIT', 
+  }
 
   @staticmethod
   def FindNextMarkup(line):
@@ -107,6 +113,12 @@ class IRCMessage(object):
     else:
       self.nick = ''
       self.host = ''
+    if self.command == 'QUIT':
+      self.chat = self.nick + ' has quit: ' + self.args[0]
+      self.nick = '<span class="IRCRed"><--</span>'
+    elif self.command == 'JOIN':
+      self.chat = self.nick + ' has joined ' + self.channel
+      self.nick = '<span class="IRCGreen">--></span>'
 
 class IRCClient:
   def ProcessServerMessage(self, msg):
@@ -214,7 +226,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
     
     ircMessage = self.IRCClient.ParseMessage(decoded_line.strip())
     print ircMessage.command
-    if ircMessage.command == 'PRIVMSG':
+    if (ircMessage.command == u'PRIVMSG' or ircMessage.command == u'JOIN' 
+        or ircMessage.command == u'QUIT' or ircMessage.command == u'332'
+        or ircMessage.command == u'TOPIC' ):
       print ircMessage
       json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
       print(json_data)

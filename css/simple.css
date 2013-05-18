@@ -27,6 +27,28 @@ vertical-align:top;
 td{
 vertical-align:top;
 }
+div.channel_header
+{
+margin-left:auto;
+margin-right:auto;
+width:100%;
+color:black;
+background-color:#FFC000;
+}
+div#channel_name
+{
+color: black ;
+font-family:arial;
+vertical-align:text-top;
+font-size: 24pt;
+}
+div#topic
+{
+color: dimgray ;
+font-family:arial;
+vertical-align:text-top;
+font-size: 12pt;
+}
 .chans{
 color: #FFC000 ;
 font-family:arial;
@@ -37,6 +59,7 @@ font-size: 12pt;
 color: #FFC000;
 font-family:arial;
 vertical-align:text-top;
+text-align: right;
 font-size: 12pt;
 }
 .timestamp {
