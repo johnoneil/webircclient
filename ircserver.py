@@ -96,6 +96,12 @@ class IRCMessage(object):
     self.args = args
     self.gmt = calendar.timegm(time.gmtime())
     self.friendly_time = time.strftime('%H:%M:%S')
+    self.channel = ''
+    self.chat = ''
+    if(len(args)>0):
+      self.channel = args[0]
+    if(len(args)>1):
+      self.chat = args[1]
     if(self.prefix is not None and self.prefix.find('!') != -1):
       (self.nick, self.host) = string.split(prefix,'!',maxsplit=1)
     else:
@@ -169,6 +175,10 @@ class YotsubaFrontend(tornado.web.RequestHandler):
 	def get(self):
 		self.render("yotsuba.html")
 
+class SimpleFrontend(tornado.web.RequestHandler):
+	def get(self):
+		self.render("simple.html")
+
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
   def initialize(self):
     print 'initialize called'
@@ -239,6 +249,7 @@ def main():
   application = tornado.web.Application([
       (r"/", MainHandler),
       (r"/yotsuba",YotsubaFrontend),
+      (r'/simple',SimpleFrontend),
       (r"/websocket", WebSocketHandler),
       (r"/css/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/css'}),
       (r"/image/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/image'}),

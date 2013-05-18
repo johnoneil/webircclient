@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Websocket Based HTML5 IRC Client</title>
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<link href="css/simple.css" rel="stylesheet" type="text/css">
+	<link href="css/irc.css" rel="stylesheet" type="text/css">
+    </head>
+    <body>
+	<span class="chans" id="channel_list"></span>
+	<h1><div id="channel_name" class="boardTitle">Channel Name</div></h1>
+        <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
+            <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
+            <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
+        </form>
+        <table id="chat"></table>
+        <script type="text/javascript">
+		var chat = d3.select("#chat");
+		var chan_div = d3.select("#channel_list");
+		//var chans = chan_div.append('span').attr('class','boardNavDesktop').attr('id','desktop');
+
+		var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
+
+		//Keep a dictionary of channel names to current channel message lists:
+		var IRCMap = [];
+		var current_chan = "";
+		var buffer_legth = 200;
+		//var message_list = new Array();
+		ws.onmessage = function(evt)
+		{
+			var p = JSON.parse(evt.data);
+
+			FilterJSON(p);
+
+			key = p.channel;//channel
+			if(current_chan === "")
+			{
+				current_chan = key;
+			}
+			if(!(key in IRCMap))
+			{
+				IRCMap[key]= new Array();
+			}
+			IRCMap[key].unshift(p);
+			if(IRCMap[key].length > buffer_legth){IRCMap[key].pop();}
+
+			Update();
+		}
+		function DispatchText(){
+			var userInput = document.getElementById("message").value;
+			document.getElementById("message").value = "";
+			ws.send(userInput);
+		}
+
+		function OnSelectChannel(channel)
+		{
+			current_chan = channel;
+			Update();
+		}
+		function Update(){
+
+			//for now change the page name to the channel name
+			d3.select('#channel_name').text(current_chan);
+
+			//update the links at the top of the page for the curent channel list
+			var keys = Object.keys(IRCMap);
+			var channels = chan_div.selectAll('a').data(keys);
+			var navbar = channels.enter().append('a')
+			.attr("onClick",function(d){return "OnSelectChannel('"+ d + "')";})
+			.text(function(d){return '[ ' + d + ' ]';})
+			channels.text(function(d,i)
+			{
+				return '[ ' + d + ' ]';
+			});			
+			channels.exit().remove();
+			
+			if(isEmpty(IRCMap) || current_chan === "" )
+			{
+				return;
+			}
+
+			var message_list = IRCMap[current_chan];
+			chat.selectAll("tr").remove();
+			var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.gmt; });
+			//var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.gmt; }).sort(d3.descending());//, function(d) { return d.friendly_time; });
+			var chat_rows_enter = chat_rows.enter().append('tr');//,'tr');
+
+			chat_rows_enter.append('td').attr('class','timestamp').text(function(d){ return d.friendly_time; });
+			chat_rows_enter.append('td').attr('class','nick').text(function(d){ return d.nick; });
+			chat_rows_enter.append('td').attr('class','line').html(function(d){ return d.chat; });
+
+			//chat_rows.selectAll('.timestamp').text(function(d){ return d.friendly_time; });
+			//chat_rows.selectAll('.nick').text(function(d){ return d.nick; });
+			//chat_rows.selectAll('.line').html(function(d){ return d.chat; });
+
+			//char_rows.sort();
+
+			//chat_rows.exit().remove();
+		}
+		//filter the incoming chat in the client so we can more closely control switching on/off
+		//various filters
+		function FilterJSON(data)
+		{
+			var previous_chat = data.chat;
+			data.chat = previous_chat.replace(/(https?:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<a href='$1' target='_blank'><img src='$1' align='top' alt='' height='125px'></a>");
+		}
+		function isEmpty(ob){
+			for(var i in ob){ return false;}
+			return true;
+		}
+
+        </script>
+    </body>
+</html>

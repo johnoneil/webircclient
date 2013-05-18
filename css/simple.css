@@ -1,0 +1,53 @@
+body
+{
+font-family:arial;
+background-color:#151515;
+}
+h1
+{
+margin-left:auto;
+margin-right:auto;
+width:100%;
+color:black;
+background-color:#FFC000;
+}
+p
+{
+background-color:rgb(255,0,255);
+} 
+img{
+max-height:85px;
+}
+table{
+vertical-align:top;
+}
+tr{
+vertical-align:top;
+}
+td{
+vertical-align:top;
+}
+.chans{
+color: #FFC000 ;
+font-family:arial;
+vertical-align:text-top;
+font-size: 12pt;
+}
+.nick {
+color: #FFC000;
+font-family:arial;
+vertical-align:text-top;
+font-size: 12pt;
+}
+.timestamp {
+color : white;
+font-family:arial;
+vertical-align:text-top;
+font-size: 12pt;
+}
+.line {
+color : white;
+font-family:arial;
+vertical-align:text-top;
+font-size: 12pt;
+}
