@@ -114,17 +114,72 @@ class IRCMessage(object):
       self.nick = ''
       self.host = ''
     if self.command == 'QUIT':
+      #quit messages have no channel info
+      self.channel = 'HOME'
       self.chat = self.nick + ' has quit: ' + self.args[0]
       self.nick = '<span class="IRCRed"><--</span>'
     elif self.command == 'JOIN':
       self.chat = self.nick + ' has joined ' + self.channel
       self.nick = '<span class="IRCGreen">--></span>'
 
+class Nick:
+  def __init__(self, name):
+    self.props = ''
+    self.op = ''
+    self.name = name
+
+class Channel:
+  def __init__(self,name, buffer_length=50):
+    self.name = name
+    self.nicks = []
+    self.topic = ''
+    self.topic_info = ''
+    self.buffer = []
+    self.buffer_length = buffer_length
+  def Nicks(self, nicks):
+    self.nicks.append(nicks)
+  def Join(self, nick, msg):
+    if(nick in self.Nicks):
+      return False
+    else:
+      self.nicks.append( Nick(nick) )
+      return True
+  def Quit(self, nick, msg=''):
+    if(nick in Nicks):
+      Nicks.remove(nick)
+      return True
+    else:
+      return False
+  def Topic(self, topic):
+    if(topic != self.topic):
+      self.topic = topic
+      return (True, self.topic)
+    else:
+      return (False, self.topic)
+  def TopicInfo(self, info):
+    if(self.topic_info != info):
+      self.topic_info = info
+      return (True, self.topic_info)
+    else:
+      return (False, self.topic_info)
+  def Privmsg(self, message):
+    self.buffer.append(message)
+    if(len(self.buffer) > self.buffer_length):
+      self.buffer.shift()
+  
+    
 class IRCClient:
+  def __init__(self):
+    self.channels = []
+    self.message_handlers = {
+      u'PING' : self.OnPing,
+    }
+
+  def OnPing(self, msg):
+    pass
+
   def ProcessServerMessage(self, msg):
-    #the IRC message (from server) will begin with either a user ID or
-    #a command. If the first space delimited word in the message begins with ':'
-    #then it's a user ID, and command is second. If not, it's a command
+    irc_message = self.ParseMessage(msg)
     (prefix, payload) = string.split(msg,maxsplit=1)
     if( prefix.startswith(":") ):
       pass
@@ -133,6 +188,17 @@ class IRCClient:
         print 'Processing PING msg for ' + payload
         return 'PONG ' + payload
     return None
+
+  def PassMessageToClient(self, msg, write2client):
+    ircMessage = self.ParseMessage(msg.strip())
+    print ircMessage.command
+    if (ircMessage.command == u'PRIVMSG' or ircMessage.command == u'JOIN' 
+        or ircMessage.command == u'QUIT' or ircMessage.command == u'332'
+        or ircMessage.command == u'TOPIC' ):
+      print ircMessage
+      json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
+      print(json_data)
+      write2client(json_data)
 
   def ParseMessage(self, msg):
     prefix = ''
@@ -202,41 +268,23 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
   def on_line(self, data):
     #python isn't great with \r\n so replace them before anything else.
     data = data.replace('\r\n', '\n')
-    decoded_line = IRCClient.decode(data)
-
-    decoded_line = IRC.MarkupToHTML(decoded_line)
-
-    #decoded_line = re.sub(ur"\u0002(.*?)\u0002", ur'<span class="IRCBold">\1</span>', decoded_line)
-    #decoded_line = re.sub(ur"\u0002(.*?)$", ur'<span class="IRCBold">\1</span>', decoded_line)
-    #decoded_line = re.sub(ur"\u001f(.*?)\u001f", ur'<span class="IRCUnderline">\1</span>', decoded_line)
-    #decoded_line = re.sub(ur"\u001f(.*?)$", ur'<span class="IRCUnderline">\1</span>', decoded_line)
-
-    #define a dictionary of irc binary tags:
-    #dic['\u0002] = "IRCBold"
-    #start search through document for all keys. Upon key, add the key to our current key group
-    #at the first key, replace as <span class="key">
-    #if no more found, add </span>
-    #if more found, add next key switch to current key group (e.g. IRCBold IRCUnderlined)
-    #replce with closing and then opening span at tag change </span><span class="IRCBold IRCUnderlined">
-    #note that keys can both turn on and off some properties (like colors)
-    #if no more found, add </span>
-    #repeat
-
-    print decoded_line
-    
-    ircMessage = self.IRCClient.ParseMessage(decoded_line.strip())
-    print ircMessage.command
-    if (ircMessage.command == u'PRIVMSG' or ircMessage.command == u'JOIN' 
-        or ircMessage.command == u'QUIT' or ircMessage.command == u'332'
-        or ircMessage.command == u'TOPIC' ):
-      print ircMessage
-      json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
-      print(json_data)
-      self.write_message(json_data)
-    #sometimes respond to server messages without involving the client (PING msg)
+    #first crack at processing responses without involving clients
+    #this is mainly to process PING requests (send PONG)
     response = self.IRCClient.ProcessServerMessage(data)
     if response is not None:
       self.stream.write(response)
+
+    #decode messages, parse and form json objects
+    #and pass some to client
+    decoded_line = IRCClient.decode(data)
+    decoded_line = IRC.MarkupToHTML(decoded_line)
+
+    print decoded_line
+    
+    self.IRCClient.PassMessageToClient(decoded_line, self.write_message)
+    #self.write_message(json_data)
+
+    #initiate the next blocking read for server messages
     self.stream.read_until('\r\n', self.on_line)
 
   def on_stream_close():
