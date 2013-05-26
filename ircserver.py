@@ -96,14 +96,20 @@ class IRC:
     return line
 
 class IRCMessage(object):
+  message_id = 0
+  @staticmethod
+  def NextMessageID():
+    IRCMessage.message_id = IRCMessage.message_id + 1
+    return IRCMessage.message_id
   def __init__(self,prefix, command, args):
     self.prefix = prefix
     self.command = command
     self.args = args
     self.gmt = calendar.timegm(time.gmtime())
-    self.friendly_time = time.strftime('%H:%M:%S')
+    self.friendly_time = time.strftime(u'%H:%M:%S')
     self.channel = ''
     self.chat = ''
+    self.message_id = IRCMessage.NextMessageID()
     if(len(args)>0):
       self.channel = args[0]
     if(len(args)>1):
@@ -113,14 +119,18 @@ class IRCMessage(object):
     else:
       self.nick = ''
       self.host = ''
-    if self.command == 'QUIT':
+    if self.command == u'QUIT':
       #quit messages have no channel info
-      self.channel = 'HOME'
-      self.chat = self.nick + ' has quit: ' + self.args[0]
-      self.nick = '<span class="IRCRed"><--</span>'
-    elif self.command == 'JOIN':
-      self.chat = self.nick + ' has joined ' + self.channel
-      self.nick = '<span class="IRCGreen">--></span>'
+      self.channel = u'HOME'
+      self.chat = self.nick + u' has quit: ' + self.args[0]
+      self.nick = u'<span class="IRCRed"><--</span>'
+    elif self.command == u'JOIN':
+      self.chat = self.nick + u' has joined ' + self.channel
+      self.nick = u'<span class="IRCGreen">--></span>'
+    elif self.command == u'332' or self.command == u'TOPIC':
+      self.channel = self.args[1]
+      self.nick = self.args[0]
+      self.chat = self.args[2]
 
 class Nick:
   def __init__(self, name):
@@ -139,14 +149,14 @@ class Channel:
   def Nicks(self, nicks):
     self.nicks.append(nicks)
   def Join(self, nick, msg):
-    if(nick in self.Nicks):
+    if(nick in self.nicks):
       return False
     else:
       self.nicks.append( Nick(nick) )
       return True
   def Quit(self, nick, msg=''):
-    if(nick in Nicks):
-      Nicks.remove(nick)
+    if(nick in self.nicks):
+      self.nicks.remove(nick)
       return True
     else:
       return False
@@ -165,12 +175,12 @@ class Channel:
   def Privmsg(self, message):
     self.buffer.append(message)
     if(len(self.buffer) > self.buffer_length):
-      self.buffer.shift()
+      self.buffer.pop(0)
   
     
 class IRCClient:
   def __init__(self):
-    self.channels = []
+    self.channels = {}
     self.message_handlers = {
       u'PING' : self.OnPing,
     }
@@ -192,9 +202,25 @@ class IRCClient:
   def PassMessageToClient(self, msg, write2client):
     ircMessage = self.ParseMessage(msg.strip())
     print ircMessage.command
-    if (ircMessage.command == u'PRIVMSG' or ircMessage.command == u'JOIN' 
-        or ircMessage.command == u'QUIT' or ircMessage.command == u'332'
-        or ircMessage.command == u'TOPIC' ):
+    if (ircMessage.command == u'PRIVMSG' ):
+      print ircMessage
+      self.channels[ircMessage.channel].Privmsg(ircMessage.chat)
+      json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
+      print(json_data)
+      write2client(json_data)
+    elif(ircMessage.command == u'JOIN'):
+      if( not ircMessage.channel in self.channels ):
+        self.channels[ircMessage.channel] = Channel(ircMessage.channel)
+      self.channels[ircMessage.channel].Join(ircMessage.nick,ircMessage.chat)
+      print ircMessage
+      json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
+      print(json_data)
+      write2client(json_data)
+    elif(ircMessage.command == u'QUIT'):
+      pass
+    elif(ircMessage.command == u'332'
+        or ircMessage.command == u'TOPIC'):
+      self.channels[ircMessage.channel].Topic(ircMessage.chat)
       print ircMessage
       json_data = json.dumps(vars(ircMessage),sort_keys=True, indent=4)
       print(json_data)

@@ -102,12 +102,14 @@
 
 			var message_list = IRCMap[current_chan];
 			chat.selectAll("tr").remove();
-			var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.gmt; });
+			var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.message_id; });
 			//var chat_rows = chat.selectAll("tr").data(message_list, function(d) { return d.gmt; }).sort(d3.descending());//, function(d) { return d.friendly_time; });
 			var chat_rows_enter = chat_rows.enter().append('tr');//,'tr');
 
 			chat_rows_enter.append('td').attr('class','timestamp').html(function(d){ return d.friendly_time; });
-			chat_rows_enter.append('td').attr('class','nick').html(function(d){ return d.nick; });
+			chat_rows_enter.append('td')
+				.attr('class','nick')
+				.html(function(d){ return d.nick  + ' <img src="http://127.0.0.1:8880/?nick=' + d.nick +'">'; });
 			chat_rows_enter.append('td').attr('class','line').html(function(d){ return d.chat; });
 
 			//chat_rows.selectAll('.timestamp').text(function(d){ return d.friendly_time; });
