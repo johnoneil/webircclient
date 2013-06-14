@@ -109,7 +109,7 @@
 			chat_rows_enter.append('td').attr('class','timestamp').html(function(d){ return d.friendly_time; });
 			chat_rows_enter.append('td')
 				.attr('class','nick')
-				.html(function(d){ return d.nick  + ' <img src="http://127.0.0.1:8880/?nick=' + d.nick +'">'; });
+				.html(function(d){ return d.nick  + ' <img src="http://192.168.1.6:8880/nicks/' + d.nick +'/country/image">'; });
 			chat_rows_enter.append('td').attr('class','line').html(function(d){ return d.chat; });
 
 			//chat_rows.selectAll('.timestamp').text(function(d){ return d.friendly_time; });

@@ -27,14 +27,21 @@
 		//Keep a dictionary of channel names to current channel message lists:
 		var IRCMap = [];
 		var current_chan = "";
+		var topicMap = [];
+		var buffer_legth = 200;
 		//var message_list = new Array();
 		ws.onmessage = function(evt)
 		{
 			var p = JSON.parse(evt.data);
 
 			FilterJSON(p);
-			//message_list.push(p);
-			key = p.args[0];//channel
+			if(p.command =='332' || p.command == 'TOPIC' )
+			{
+				topicMap[p.args[1]] = p.args[2];
+				Update();
+				return;
+			}
+			key = p.channel;//channel
 			if(current_chan === "")
 			{
 				current_chan = key;
@@ -43,13 +50,10 @@
 			{
 				IRCMap[key]= new Array();
 			}
-			IRCMap[key].push(p);
-			if(IRCMap[key].length > 10){IRCMap[key].shift();}
+			IRCMap[key].unshift(p);
+			if(IRCMap[key].length > buffer_legth){IRCMap[key].pop();}
 
-			if( current_chan === key )
-			{
-				Update();
-			}
+			Update();
 		}
 		function DispatchText(){
 			var userInput = document.getElementById("message").value;
@@ -85,7 +89,7 @@
 			}
 
 			var message_list = IRCMap[current_chan];
-			var chat = chat_div.selectAll("#postContainer").data(message_list, function(d) { return d.friendly_time; });
+			var chat = chat_div.selectAll("#postContainer").data(message_list, function(d) { return d.message_id; });
 
 			var replycontainer = chat.enter()
 			.append("div")
@@ -104,8 +108,10 @@
 			var nameblock = postinfo.append("span").attr("class","nameBlock");
 			nameblock.append("span").attr("class","name").text(function(d) { return d.nick; });
 			nameblock.append("span").attr("class","posteruid").text(function(d) { return "(ID:" + d.command + ")"; });
+			nameblock.append('img')
+				.attr('src',function(d){ return 'http://192.168.1.6:8880/nicks/' + d.nick +'/country/image'; });
 			postinfo.append("span").attr("class","dateTime").text(function(d) { return d.friendly_time; });
-			postinfo.append("span").attr("class","postNum Desktop").text("No.xxxxxxxx");
+			postinfo.append("span").attr("class","postNum Desktop").text(function(d) { return "No." + d.message_id; });
 			
 			post_reply.append("blockquote")
 			.attr("class","postMessage")
