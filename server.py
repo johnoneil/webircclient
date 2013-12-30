@@ -63,46 +63,19 @@ class WebSocketHandler(cyclone.websocket.WebSocketHandler):
   def connectionLost(self, reason):
     print 'WebSocketHandler::connectionMade'
 
-  #@classmethod
-  #def update_cache(cls, chat):
-  #  cls.cache.append(chat)
-  #  if len(cls.cache) > cls.cache_size:
-  #    cls.cache = cls.cache[-cls.cache_size:]
-
-  #@classmethod
-  #def send_updates(cls, chat):
-  #  log.msg("sending message to %d waiters" % len(cls.waiters))
-  #  for waiter in cls.waiters:
-  #    try:
-  #      waiter.sendMessage(chat)
-  #    except Exception, e:
-  #      log.err("Error sending message. %s" % str(e))
-
   def messageReceived(self, messageReceived):
     print 'WebSocketHandler::connectionMade. msg:' + messageReceived
     log.msg("got message %s" % message)
-    #pickled = jsonpickle.encode(chat)
     parsed = cyclone.escape.json_decode(message)
-    #chat = {
-    #    "id": str(uuid.uuid4()),
-    #    "body": parsed["body"],
-    #    }
-    #chat["html"] = self.render_string("message.html", message=chat)
-
-    #ChatSocketHandler.update_cache(chat)
-    #ChatSocketHandler.send_updates(chat)
 
   def update_clients(self, data):
-    #data = dict(visits=self.stats.todaysVisits(),
-    #            chatters=self.stats.chatters)
-    #self.sendMessage(cyclone.escape.json_encode(data))
-    #self.sendMessage(cyclone.escape.json_encode(data))
+    #TODO: Update clients via websocket
     pickled = jsonpickle.encode(data)
     print 'Websocket::update_clients()' + unicode(pickled)
     
 
 
-class Application(cyclone.web.Application):
+class IRCWebChatFrontend(cyclone.web.Application):
   def __init__(self):
     self.irc_socket = None 
 
@@ -115,14 +88,7 @@ class Application(cyclone.web.Application):
           (r"/css/(.*)", cyclone.web.StaticFileHandler, {'path': '/home/joneil/code/webircclient/css'}),
           (r"/image/(.*)", cyclone.web.StaticFileHandler, {'path': '/home/joneil/code/webircclient/image'}),
       ]
-    '''
-      handlers = [
-          (r"/", MainHandler, dict(stats=stats)),
-          (r"/stats", StatsPageHandler),
-          (r"/statssocket", StatsSocketHandler, dict(stats=stats)),
-          (r"/chatsocket", ChatSocketHandler, dict(stats=stats)),
-      ]
-    '''
+
     settings = dict(
       cookie_secret="43oETzKXQAGaYdkL5gEmGeJJFuYh7EQnp2XdTP1o/Vo=",
       template_path=os.path.join(os.path.dirname(__file__), "templates"),
@@ -149,112 +115,6 @@ class Application(cyclone.web.Application):
     pickled = jsonpickle.encode(msg)
     print 'Websocket::update_clients()' + unicode(pickled)
 
-'''
-class MainHandler(cyclone.web.RequestHandler):
-  def initialize(self, stats):
-    self.stats = stats
-
-  def get(self):
-    self.stats.newVisit()
-    self.render("index.html", messages=ChatSocketHandler.cache)
-
-  def initialize(self):
-    print 'initialize called'
-    self.IRCClient = IRCClient()
-
-  def on_connect(self):
-    print '
-    #self.stream.read_until('\r\n', self.on_line)
-
-  def on_line(self, data):
-    #python isn't great with \r\n so replace them before anything else.
-    data = data.replace('\r\n', '\n')
-    #first crack at processing responses without involving clients
-    #this is mainly to process PING requests (send PONG)
-    response = self.IRCClient.ProcessServerMessage(data)
-    if response is not None:
-      self.stream.write(response)
-
-    #decode messages, parse and form json objects
-    #and pass some to client
-    decoded_line = IRCClient.decode(data)
-    decoded_line = IRC.MarkupToHTML(decoded_line)
-
-    print decoded_line
-    
-    self.IRCClient.PassMessageToClient(decoded_line, self.write_message)
-    #self.write_message(json_data)
-
-    #initiate the next blocking read for server messages
-    self.stream.read_until('\r\n', self.on_line)
-
-  def on_stream_close():
-    print 'socket closed'
-
-  def open(self):
-    print "WebSocket opened"
-    self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-    self.stream = tornado.iostream.IOStream(self.s)
-    self.stream.connect(("192.168.1.6", 6660), self.on_connect)
-
-  def on_message(self, message):
-    cmd = self.IRCClient.ProcessClientCommand(message)
-    if cmd is not None:
-      print 'sending command ' + cmd + ' to host'
-      self.stream.write(str(cmd))
-
-  def on_close(self):
-    print 'websocket close'
-    self.stream.close()
-
-'''
-
-
-'''
-class StatsSocketHandler(cyclone.websocket.WebSocketHandler):
-  def initialize(self, stats):
-    self.stats = stats
-
-    self._updater = task.LoopingCall(self._sendData)
-
-  def connectionMade(self):
-    self._updater.start(2)
-
-  def connectionLost(self, reason):
-    self._updater.stop()
-
-  def _sendData(self):
-    data = dict(visits=self.stats.todaysVisits(),
-                chatters=self.stats.chatters)
-    self.sendMessage(cyclone.escape.json_encode(data))
-
-
-class Stats(object):
-  def __init__(self):
-    self.visits = defaultdict(int)
-    self.chatters = 0
-
-  def todaysVisits(self):
-    today = time.localtime()
-    key = time.strftime('%Y%m%d', today)
-    return self.visits[key]
-
-  def newChatter(self):
-    self.chatters += 1
-
-  def lostChatter(self):
-    self.chatters -= 1
-
-  def newVisit(self):
-    today = time.localtime()
-    key = time.strftime('%Y%m%d', today)
-    self.visits[key] += 1
-
-
-class StatsPageHandler(cyclone.web.RequestHandler):
-  def get(self):
-    self.render("stats.html")
-'''
 
 class IRCWebChatClient(twisted_irc.IRCClient):
 
@@ -392,8 +252,8 @@ def main():
     'autojoin': channels
   }
 
-  web_frontend = Application()
-  factory = IRCWebChatClientFactory(hostname, hostname, web_frontend)
+  web_frontend = IRCWebChatFrontend()
+  factory = IRCWebChatClientFactory(hostname, network, web_frontend)
   if args.ssl:
     reactor.connectSSL(hostname, port, factory, ssl.ClientContextFactory())
   else:
