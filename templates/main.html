@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Websocket Based HTML5 IRC Client</title>
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js"></script>
+	  <style type="text/css">
+		div{
+		display:inline;
+		}
+		img{
+		max-height:85px;
+		}
+		table{
+		vertical-align:top;
+		}
+		tr{
+		vertical-align:top;
+		}
+		td{
+		vertical-align:top;
+		}
+		div.nick {
+		color: #FFC000;
+		font-family:arial;
+		vertical-align:text-top;
+		font-size: 12pt;
+		}
+		div.timestamp {
+		color : white;
+		font-family:arial;
+		vertical-align:text-top;
+		font-size: 12pt;
+		}
+		div.chat {
+		color : white;
+		font-family:arial;
+		vertical-align:text-top;
+		font-size: 12pt;
+		}
+		
+	</style>
+    </head>
+    <body style="font-family:  Helvetica, Arial, sans-serif; font-size: 24pt" bgcolor="#151515">
+        <p style="color:#FFC000;width: 800px">Websocket Based HTML5 IRC Client</p>
+        <div id="viz"></div>
+        <form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
+            <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
+            <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
+        </form>
+        <script type="text/javascript">
+		var sampleSVG = d3.select("#viz")
+			.append("svg")
+			.attr("width", 800)
+			.attr("height", 500);
+		var ws = new WebSocket("ws://127.0.0.1:8888/websocket");
+		var message_list = new Array();
+		ws.onmessage = function(evt)
+		{
+			var p = JSON.parse(evt.data);
+			FilterJSON(p);
+			message_list.push(p);
+			if(message_list.length > 10){message_list.shift();}
+			Update();
+		}
+		function DispatchText(){
+			var userInput = document.getElementById("message").value;
+			document.getElementById("message").value = "";
+			ws.send(userInput);
+		}
+		function Update(){
+			var g = sampleSVG.selectAll("g").data(message_list, function(d) { return d.friendly_time; });
+
+			var enter_g = g.enter().append("g").attr("transform","translate(15,600)");
+
+			rects = enter_g.append("rect")
+			.attr("rx", 6)
+			.attr("ry", 6)
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", 700)
+			.attr("height", 28)
+			.style("fill","black")
+			.style("stroke","white");
+
+			fo = enter_g.append('foreignObject')
+			.attr('x', 0)
+			.attr('y', 0)
+			.attr('width', 700)
+			.attr('height',"28")
+			.style('padding','5px');
+
+			bodies = fo.append("xhtml:body")
+			.html(function(d) { return '<table><tr><td><div class="timestamp">' + d.friendly_time + ' | </div></td><td><div class="nick">' + d.nick + '</div></td><td><div class="chat"> | ' + d.args[1] + '</div></td></tr></table>'; });
+			
+			var bodies = g.selectAll("body");
+			fo.transition().duration(500).attr("height", function(d,i){return bodies[i][0].getBoundingClientRect().height;});
+			rects.transition().duration(500).attr("height", function(d,i){return bodies[i][0].getBoundingClientRect().height;});			
+			g.transition()
+			.duration(500)
+			.attr("transform",function(d,i){
+				var y = 15;
+				for(var pos = 0; pos < i; ++pos)
+				{
+					y = y + bodies[pos][0].getBoundingClientRect().height;
+				}
+				return "translate(15,"+ y +")";
+				});
+			//.attr("transform", function(d,i){return "translate(15,"+ (i+1)*32 +")";});
+			
+			g.exit()
+			.transition()
+			.duration(500)
+			.attr("transform","translate(15,-10)")
+			.style("opacity", 0)
+			.remove();
+		}
+		//filter the incoming chat in the client so we can more closely control switching on/off
+		//various filters
+		function FilterJSON(data)
+		{
+			var previous_chat = data.args[1];
+			data.args[1] = previous_chat.replace(/(http:\/\/[\w\-\.]+\.[a-zA-Z]{2,3}(?:\/\S*)?(?:[\w])+\.(?:jpg|png|gif|jpeg|bmp))/ig, "<a href='$1' target='_blank'><img src='$1' align='top' alt=''></a>");
+		}
+
+        </script>
+    </body>
+</html>

@@ -21,6 +21,7 @@ import datetime
 import calendar
 import os
 import re
+import argparse
 
 class IRC:
   Symbols = {
@@ -334,15 +335,33 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
  
 
 def main():
+  parser = argparse.ArgumentParser(description='IRC bouncer (client) that provides HTML5 websocket client interface.')
+  parser.add_argument('hostname', help='IRC server URL as domain:port (e.g. www.freenode.net:6660).', type=str)
+  parser.add_argument('nickname', help='Nick to use at signon. Multiple nicks not yet supported.', type=str)
+  parser.add_argument('channel', help='Channel to join on server. Only supporting one channel presently.', type=str)
+  parser.add_argument('-p','--server_port', help='Port this server will service html client requests on. NOT the IRC server port this server connects to.', type=int, default=8888)
+  parser.add_argument('-u', '--username', help='Username this server uses at IRC server signon.', type=str, default='')
+  parser.add_argument('-r', '--realname', help='Realname this server uses at IRC server signon.', type=str, default='')
+  parser.add_argument('--password', help='Optional password this server uses at signon', type=str, default=None)
+  parser.add_argument('-v', '--verbose', help='Run server in verbose mode.', action="store_true")
+  parser.add_argument('-s', '--ssl', help='Connect to server via SSL.', action="store_true")
+  args = parser.parse_args()
+
+  if args.verbose:
+    print 'Running server on port {port}'.format(port=args.server_port)
+    print 'Attempting to connect to IRC server {hostname} at {nick}'.format(hostname=args.hostname, nick=args.nickname)
+
+  stats = {}
+
   application = tornado.web.Application([
       (r"/", MainHandler),
       (r"/yotsuba",YotsubaFrontend),
-      (r'/simple',SimpleFrontend),
+      (r'/simple',SimpleFrontend,),
       (r"/websocket", WebSocketHandler),
       (r"/css/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/css'}),
       (r"/image/(.*)", tornado.web.StaticFileHandler, {'path': '/home/joneil/code/WebIRCClient/image'}),
   ])
-  application.listen(8888)
+  application.listen(args.server_port)
   tornado.ioloop.IOLoop.instance().start() 
  
 if __name__ == "__main__":
