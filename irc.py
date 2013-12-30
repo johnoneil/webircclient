@@ -12,11 +12,16 @@ DATE: Tuesday, Dec 24th 2013
 import re
 import string
 
-class PrivMessage(object):
+class JSONTagged(object):
+  def __init__(self):
+    self.type = self.__class__.__name__
+
+class PrivMessage(JSONTagged):
   '''message encapsulating an IRC PRIVMSG.
   Really just meant to be used converting to json
   '''
   def __init__(self, user, channel, msg):
+    super(PrivMessage, self).__init__()
     self.user = user
     self.channel = channel
     self.msg = msg
@@ -24,13 +29,15 @@ class PrivMessage(object):
     self.nick = nick
     self.vhost = vhost
 
-class TopicMessage(object):
+class TopicMessage(JSONTagged):
   def __init__(self, channel, topic):
+    super(TopicMessage, self).__init__()
     self.channel = channel
     self.topic = topic
 
-class JoinedMessage(object):
+class JoinedMessage(JSONTagged):
   def __init__(self, channel):
+    super(JoinedMessage, self).__init__()
     self.channel = channel
 
 def split_speaker(user):

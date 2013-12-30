@@ -42,7 +42,7 @@ class SocketError(Exception):
 
 class MainHandler(cyclone.web.RequestHandler):
 	def get(self):
-		self.render("main.html")
+		self.render("main.html", host=self.settings.hostname, port=self.settings.port)
 
 class YotsubaFrontend(cyclone.web.RequestHandler):
 	def get(self):
@@ -59,24 +59,29 @@ class WebSocketHandler(cyclone.websocket.WebSocketHandler):
 
   def connectionMade(self):
     print 'WebSocketHandler::connectionMade'
+    self.application.clients.append(self)
 
   def connectionLost(self, reason):
-    print 'WebSocketHandler::connectionMade'
+    print 'WebSocketHandler::connectionLost'
+    self.application.clients.remove(self)
 
   def messageReceived(self, messageReceived):
     print 'WebSocketHandler::connectionMade. msg:' + messageReceived
-    log.msg("got message %s" % message)
-    parsed = cyclone.escape.json_decode(message)
+    log.msg("got message %s" %messageReceived)
+    #parsed = cyclone.escape.json_decode(message)
 
-  def update_clients(self, data):
-    #TODO: Update clients via websocket
-    pickled = jsonpickle.encode(data)
+  def update(self, msg):
+    #TODO: Update client via websocket
+    pickled = jsonpickle.encode(msg)
     print 'Websocket::update_clients()' + unicode(pickled)
+    self.sendMessage(unicode(pickled))
     
 
 
 class IRCWebChatFrontend(cyclone.web.Application):
-  def __init__(self):
+  clients = []
+
+  def __init__(self, hostname='localhost', port='8888'):
     self.irc_socket = None 
 
     #stats = Stats()
@@ -95,6 +100,8 @@ class IRCWebChatFrontend(cyclone.web.Application):
       static_path=os.path.join(os.path.dirname(__file__), "static"),
       xsrf_cookies=True,
       autoescape=None,
+      hostname=hostname,
+      port=port,
     )
     cyclone.web.Application.__init__(self, handlers, **settings)
 
@@ -113,7 +120,9 @@ class IRCWebChatFrontend(cyclone.web.Application):
     '''
     #TODO: send json data via websocket to all listening clients.
     pickled = jsonpickle.encode(msg)
-    print 'Websocket::update_clients()' + unicode(pickled)
+    print 'IRCWebChatFrontend::update_clients()' + unicode(pickled)
+    for client in IRCWebChatFrontend.clients:
+      client.update(msg)
 
 
 class IRCWebChatClient(twisted_irc.IRCClient):
