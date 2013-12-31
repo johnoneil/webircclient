@@ -40,6 +40,85 @@ class JoinedMessage(JSONTagged):
     super(JoinedMessage, self).__init__()
     self.channel = channel
 
+class LeftMessage(JSONTagged):
+  def __init__(self, channel):
+    super(LeftMessage, self).__init__()
+    self.channel = channel
+
+class NoticedMessage(JSONTagged):
+  def __init__(self, user, channel, msg):
+    super(NoticedMessage, self).__init__()
+    self.user = user
+    self.channel = channel
+    self.msg = msg
+
+class ModeChangedMessage(JSONTagged):
+  def __init__(self, user, channel, set, modes, args):
+    super(ModeChangedMessage, self).__init__()
+    self.user = user
+    self.set = set
+    self.modes = modes
+    self.args = args
+
+class KickedFromMessage(JSONTagged):
+  def __init__(self,  channel, kicker, message):
+    super(KickedFromMessage, self).__init__()
+    self.channel = channel
+    self.kicker = kicker
+    self.message = message
+
+class NickChangedMessage(JSONTagged):
+  def __init__(self,  nick):
+    super(NickChangedMessage, self).__init__()
+    self.nick = nick
+
+class UserJoinedMessage(JSONTagged):
+  def __init__(self,  user, channel):
+    super(UserJoinedMessage, self).__init__()
+    self.user = user
+    self.channel = channel
+
+class UserLeftMessage(JSONTagged):
+  def __init__(self,  user, channel):
+    super(UserLeftMessage, self).__init__()
+    self.user = user
+    self.channel = channel
+
+class UserQuitMessage(JSONTagged):
+  def __init__(self,  user, quit_message):
+    super(UserQuitMessage, self).__init__()
+    self.user = user
+    self.quit_message = quit_message
+
+class UserKickedMessage(JSONTagged):
+  def __init__(self, kickee, channel, kicker, message):
+    super(UserKickedMessage, self).__init__()
+    self.kickee = kickee
+    self.channel = channel
+    self.kicker = kicker
+    self.message = message
+
+class ActionMessage(JSONTagged):
+  def __init__(self, user, channel, data):
+    super(ActionMessage, self).__init__()
+    self.user = user
+    self.channel = channel
+    self.data = data
+
+class TopicUpdatedMessage(JSONTagged):
+  def __init__(self,  user, channel, new_topic):
+    super(TopicUpdatedMessage, self).__init__()
+    self.user = user
+    self.channel = channel
+    self.new_topic = new_topic
+
+class UserRenamedMessage(JSONTagged):
+  def __init__(self, oldname, newname):
+    super(UserRenamedMessage, self).__init__()
+    self.oldname = oldname
+    self.newname = newname
+
+
 def split_speaker(user):
   '''
   split a nick most likely in the form:

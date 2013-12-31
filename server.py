@@ -90,8 +90,8 @@ class IRCWebChatFrontend(cyclone.web.Application):
           (r"/yotsuba",YotsubaFrontend),
           (r'/simple',SimpleFrontend),
           (r"/websocket", WebSocketHandler, dict(data=self)),
-          (r"/css/(.*)", cyclone.web.StaticFileHandler, {'path': '/home/joneil/code/webircclient/css'}),
-          (r"/image/(.*)", cyclone.web.StaticFileHandler, {'path': '/home/joneil/code/webircclient/image'}),
+          (r"/css/(.*)", cyclone.web.StaticFileHandler),
+          (r"/image/(.*)", cyclone.web.StaticFileHandler),
       ]
 
     settings = dict(
@@ -146,9 +146,9 @@ class IRCWebChatClient(twisted_irc.IRCClient):
     '''
     network = self.factory.network
 
-    if network['identity']['nickserv_pw']:
+    if network['identity']['nickserv_password']:
       self.msg('NickServ', 
-            'IDENTIFY %s' % network['identity']['nickserv_pw'])
+            'IDENTIFY %s' % network['identity']['nickserv_password'])
 
     for channel in network['autojoin']:
       print('join channel %s' % channel)
@@ -175,14 +175,63 @@ class IRCWebChatClient(twisted_irc.IRCClient):
     priv_message = irc.PrivMessage(user, channel, msg)
     self.factory.web_frontend.update_clients(priv_message)
 
+  def left(self, channel):
+    left_message = irc.LeftMessage(channel)
+    self.factory.web_frontend.update_clients(left_message)
+
+  def noticed(self, user, channel, message):
+    notieced_msg = irc.NoticedMessage(user, channel, message)
+    self.factory.web_frontend.update_clients(notieced_msg)
+
+  def modeChanged(self, user, channel, set, modes, args):
+    mode_changed_msg = irc.ModeChangedMessage(user, channel, set, modes, args)
+    self.factory.web_frontend.update_clients(mode_changed_msg)
+    
+  def kickedFrom(self, channel, kicker, message):
+    kicked_from_msg = irc.KickedFromMessage(channel, kicker, message)
+    self.factory.web_frontend.update_clients(kicked_from_msg)
+
+  def NickChanged(self, nick):
+    nick_changed_msg = irc.NickChangedMessage(nick)
+    self.factory.web_frontend.update_clients(nick_changed_msg)
+
+  def userJoined(self, user, channel):
+    user_joined_msg = irc.UserJoinedMessage(user, channel)
+    self.factory.web_frontend.update_clients(user_joined_msg)
+
+  def userLeft(self, user, channel):
+    user_left_msg = irc.UserLeftMessage(user, channel)
+    self.factory.web_frontend.update_clients(user_left_msg)
+
+  def userQuit(self, user, quit_message):
+    user_quit_msg = irc.UserQuitMessage(user, quit_message)
+    self.factory.web_frontend.update_clients(user_quit_msg)
+
+  def userKicked(self, kickee, channel, kicker, message):
+    user_kicked_msg = irc.UserKickedMessage(kickee, channel, kicker, message)
+    self.factory.web_frontend.update_clients(user_kicked_msg)
+
+  def action(self, user, channel, data):
+    action_msg = irc.ActionMessage(user, action, data)
+    self.factory.web_frontend.update_clients(action_msg)
+
+  def topicUpdated(self, user, channel, new_topic):
+    topic_updated_msg = irc.TopicUpdatedMessage(user, channel, new_topic)
+    self.factory.web_frontend.update_clients(topic_updated_msg)
+
+  def userRenamed(self, oldname, newname):
+    user_renamed_msg = irc.UserRenamedMessage(oldname, newname)
+    self.factory.web_frontend.update_clients(user_renamed_msg)
+
+  '''
   def irc_RPL_TOPIC(self, prefix, params):
-    '''
+    """
     Called when the topic for a channel is initially reported or when it      subsequently changes.
     params[0] is your nick
     params[1] is channel joined
     params[2] is topic for channel
 
-    '''
+    """
     print 'IRCWebChatClient::irc_RPL_TOPIC'
     channel = params[1]
     topic = params[2]
@@ -190,7 +239,7 @@ class IRCWebChatClient(twisted_irc.IRCClient):
 
     topic_message = irc.TopicMessage(channel, topic)
     self.factory.web_frontend.update_clients(topic_message)
-
+'''
   def alterCollidedNick(self, nickname):
     print 'IRCWebChatClient::alterCollidedNick'
     return nickname+'_'
@@ -231,6 +280,7 @@ def main():
   parser.add_argument('-u', '--username', help='Username this server uses at IRC server signon.', type=str, default='')
   parser.add_argument('-r', '--realname', help='Realname this server uses at IRC server signon.', type=str, default='')
   parser.add_argument('--password', help='Optional password this server uses at signon', type=str, default=None)
+  parser.add_argument('--nickserv_pw', help='Optional password to use with nickserv after IRC server connect.', type=str, default=None)
   parser.add_argument('-v', '--verbose', help='Run server in verbose mode.', action="store_true")
   parser.add_argument('-s', '--ssl', help='Connect to server via SSL.', action="store_true")
   args = parser.parse_args()
@@ -243,13 +293,14 @@ def main():
     'nickname': args.nickname,
     'realname': args.realname if len(args.realname)>0 else args.nickname,
     'username': args.username if len(args.username)>0 else args.nickname,
-    'nickserv_pw': args.password
+    'password': args.password,
+    'nickserv_password': args.nickserv_pw
   }
   #we've got to add thise to the client, which is odd as fuq
   IRCWebChatClient.nickname = credentials['nickname']
   IRCWebChatClient.realname = credentials['realname']
   IRCWebChatClient.username = credentials['username']
-  IRCWebChatClient.password = credentials['nickserv_pw']
+  IRCWebChatClient.password = credentials['password']
     
   channels = (args.channel,)
 
