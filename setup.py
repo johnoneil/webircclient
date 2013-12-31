@@ -6,7 +6,7 @@ def readme():
 
 setup(name='webircclient',
     version='0.1',
-    description='IRC bouncer with web client interface.',
+    description='IRC client with web client interface.',
     long_description = readme(),
 	classifiers=[
         'Development Status :: 3 - Alpha',
@@ -19,7 +19,7 @@ setup(name='webircclient',
     author='John O\'Neil',
     author_email='oneil.john@gmail.com',
     license='MIT',
-    packages=['huplo'],
+    packages=['webircclient'],
     install_requires=[
         'cyclone',
         'twisted',
