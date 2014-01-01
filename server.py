@@ -10,7 +10,29 @@ DATE: Saturday, December 29th 2013
 
 Refactoring the basic setup i did last year to eliminate the need
 for a specific IRC client to be coded.
-This moves to using cyclone to leverage the twisted IRC client
+This moves to using cyclone to leverage the twisted IRC client.
+
+basic operation as follows:
+
+   -------------                 --------------              -----------------------
+  |             |               |              |            |                       |
+  | web browser |<--websocket-->|  this server |<--TCP/IP-->| IRC Server or bouncer |
+  |             |               |              |            |                       |
+   -------------                 --------------              -----------------------
+
+  1) Currently this server is configured to log into an IRC server and some channels
+  (this may changes or be enhanced with client initiation of this login process
+  in the future)
+
+  2) Web brorser retrieves page from this browser, that page initiates a websocket
+  connection to this server from the browser.
+
+  3) Once the websocke connection is established, this server feeds IRC protocol
+  messages down the websocket to browser as a series of JSON messages. Clients
+  can interpret and display these JSON messages in any way they want.
+
+  4) Clients can also feed JSON messages up the websocket up to the server. The
+  format for these messages is not yet described as I'm refactoring.
   
 """ 
 
