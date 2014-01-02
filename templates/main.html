@@ -29,7 +29,7 @@
 		var msg = JSON.parse(evt.data);
 		if(msg.type == 'PrivMessage')
 		{
-			message_list.push(msg.msg);
+			message_list.push(msg);
 			if(message_list.length > buffer_length){message_list.shift();}
 			Update();
 		}
@@ -58,7 +58,10 @@
 		var arrayLength = message_list.length;
 		var newTable =  $('<table class="posts" id="conversation">').appendTo('#chat'); 
 		for (var i = 0; i < arrayLength; i++) {
-            $('<tr class="post"><td class="spoke">'+message_list[i]+'</td></tr>').appendTo('#conversation');
+            new_post = $('<tr class="post"></tr>').appendTo('#conversation')
+            new_post.append($('<td class=timestamp>'+message_list[i].timestamp+'</td>'))
+            new_post.append($('<td class=nick>'+message_list[i].nick+'</td>'))
+            new_post.append($('<td class=spoke>'+message_list[i].msg+'</td>'))
         }
 
         //if we were originally scrolled to the bottom of the chat

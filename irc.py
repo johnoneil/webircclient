@@ -11,6 +11,8 @@ DATE: Tuesday, Dec 24th 2013
 
 import re
 import string
+import time
+import calendar
 
 class JSONTagged(object):
   def __init__(self):
@@ -22,6 +24,9 @@ class PrivMessage(JSONTagged):
   '''
   def __init__(self, user, channel, msg):
     super(PrivMessage, self).__init__()
+    self.gmt = calendar.timegm(time.gmtime())
+    self.localtime = calendar.timegm(time.localtime())
+    self.timestamp = time.strftime(u'%H:%M:%S')
     self.user = user
     self.channel = channel
     self.msg = msg
