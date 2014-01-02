@@ -3,36 +3,58 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>Websocket Based HTML5 IRC Client</title>
+        <style type="text/css">
+            .scrollable {
+                height: 400px;
+                overflow-y: auto;
+            }
+        </style>
 	</head>
 	<body>
 		<p>Websocket Based HTML5 IRC Client</p>
-		<div id="chat"></div>
-		<form id="conversation" onsubmit="DispatchText()" action="javascript:void(0);">
-			<input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
-			<input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
-		</form>
+		<div id="irc">
+            <div id="chat" class="scrollable"></div>
+		    <form id="commands" onsubmit="DispatchText()" action="javascript:void(0);">
+			    <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
+			    <input type="submit" id="sub" name="sub" value="Send" style="width:90px" />
+		    </form>
+        </div>
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<script type="text/javascript">
 	var ws = new WebSocket("ws://{{ host }}:{{ port }}/websocket");
 	var message_list = new Array();
+    var buffer_length = 100;
 	ws.onmessage = function(evt)
 	{
 		var msg = JSON.parse(evt.data);
 		if(msg.type == 'PrivMessage')
 		{
 			message_list.push(msg.msg);
-			if(message_list.length > 10){message_list.shift();}
+			if(message_list.length > buffer_length){message_list.shift();}
 			Update();
 		}
 	}
+
 	function DispatchText(){
 		var userInput = document.getElementById("message").value;
 		document.getElementById("message").value = "";
 		ws.send(userInput);
 	}
+
+    function IsScrollbarAtBottom(divName){
+        var div = $(divName);
+        return ((div[0].scrollHeight - div.scrollTop()) == div.height());
+        //return (div[0].scrollHeight == div.scrollTop());
+    }
+
+    function ScrollToBottom(divName){
+        $(divName).scrollTop($(divName)[0].scrollHeight);
+    }
+
 	function Update(){
+        var scrollbarAtBottom = IsScrollbarAtBottom('#chat');
 		$('#conversation').remove()
-		
+
 		var arrayLength = message_list.length;
 		var newTable = document.createElement('table');
 		newTable.setAttribute("id", "conversation");
@@ -45,6 +67,13 @@
     	newTable.appendChild(tr);
 		}
 		$('#chat').append(newTable);
+
+        //if we were originally scrolled to the bottom of the chat
+        //make sure we're following along by scrolling to the new bottom
+        if(scrollbarAtBottom)
+        {
+            ScrollToBottom('#chat');
+        }
 	}
 
 		</script>
