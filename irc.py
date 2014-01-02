@@ -327,6 +327,9 @@ def markup_to_html(message):
       self.fg_color = -1
       self.bg_color = -1
       self.italic = False
+
+    def has_styles(self):
+      return self.bold or self.underline or self.italic or self.fg_color>=0 or self.bg_color>=0
       
     def __call__(self, match):
       '''
@@ -367,26 +370,33 @@ def markup_to_html(message):
 
       if not self.match_found:
         self.match_found=True
-        output = '<span '
+        if self.has_styles():
+          output = '<span class="'
+        else:
+          return
       else:
-        output = '</span><span '
+        if self.has_styles():
+          output = '</span><span class="'
+        else:
+          output = '</span>'
+          return
 
       if self.bold:
-        output += 'class="IRCBold" '
+        output += 'IRCBold '
 
       if self.underline:
-        output += 'class="IRCUnderline" '
+        output += 'IRCUnderline '
 
       if self.italic:
-        output += 'class="IRCItalic" '
+        output += 'IRCItalic '
 
       if self.fg_color >=0:
-        output += 'class="IRCForegroundColor' + color_code_to_html(self.fg_color) + '" '
+        output += 'IRCForegroundColor' + color_code_to_html(self.fg_color) + ' '
 
       if self.bg_color >=0:
-        output += 'class="BackgroundColor' + color_code_to_html(self.bg_color) + '" '
+        output += 'IRCBackgroundColor' + color_code_to_html(self.bg_color) + ' '
 
-      output += '>'
+      output += '">'
 
       return output
 
