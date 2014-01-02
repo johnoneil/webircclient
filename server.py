@@ -126,7 +126,6 @@ class IRCWebChatFrontend(cyclone.web.Application):
           (r"/image/(.*)", cyclone.web.StaticFileHandler, {'path': settings['static_path']}),
       ]
 
-
     cyclone.web.Application.__init__(self, handlers, **settings)
 
   def set_irc_socket(self, socket):

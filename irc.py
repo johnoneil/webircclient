@@ -115,7 +115,9 @@ class TopicUpdatedMessage(JSONTagged):
     super(TopicUpdatedMessage, self).__init__()
     self.user = user
     self.channel = channel
-    self.new_topic = new_topic
+    topic = decode(new_topic)
+    topic = markup_to_html(topic)
+    self.new_topic = topic
 
 class UserRenamedMessage(JSONTagged):
   def __init__(self, oldname, newname):
@@ -388,12 +390,16 @@ def markup_to_html(message):
 
       return output
 
+  #replace image urls with image links. These are styled to hopefully we can disable on a client.
+  img_regex = r'(?i)(?P<url>http(s?):\/\/.*(?:pg|png|gif|jpeg|bmp|jpg))'
+  msg = re.sub(img_regex, '<span class="image"><a href="\g<url>" target="_blank"><img src="\g<url>" align="top" alt=""></a></span>', msg)
+
   #TODO: it would be best to refactor this to match not only the IRC binary markup
   #but also the text between this markup and the next instance/eol. That
   #would be easier to turn into ideal pango (HTML-like) markup tags.
-  regex = r'((?P<reset>\x0f)|(?P<underline>\x1f)|(?P<bold>\x02)|(?P<italic>\x1d)|(?P<reverse>\x12)|(?P<color>\x03(?P<fg>\d{1,2})?(,(?P<bg>\d{1,2}))?))+'
+  irc_regex = r'((?P<reset>\x0f)|(?P<underline>\x1f)|(?P<bold>\x02)|(?P<italic>\x1d)|(?P<reverse>\x12)|(?P<color>\x03(?P<fg>\d{1,2})?(,(?P<bg>\d{1,2}))?))+'
   markup_transform = MarkupFunctor()
-  msg = re.sub(regex, markup_transform, msg)
+  msg = re.sub(irc_regex, markup_transform, msg)
   if markup_transform.match_found:
     msg += '</span>'
   return msg

@@ -8,12 +8,15 @@
                 height: 400px;
                 overflow-y: auto;
             }
+            #chat img {max-height:140px; width:auto}
         </style>
         <link href="css/irc.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
 		<p>Websocket Based HTML5 IRC Client</p>
 		<div id="irc">
+            <div id='channel' class='IRCChannelName></div>
+            <div id='topic' class='IRCChannelTopic'></div>
             <div id="chat" class="scrollable"></div>
 		    <form id="commands" onsubmit="DispatchText()" action="javascript:void(0);">
 			    <input type="text" id="message" name="message" autocomplete="off" style="width:700px" />
@@ -34,6 +37,10 @@
 			if(message_list.length > buffer_length){message_list.shift();}
 			Update();
 		}
+        else if(msg.type == 'TopicUpdatedMessage')
+        {
+            $('#topic').text(msg.new_topic)
+        }
 	}
 
 	function DispatchText(){
