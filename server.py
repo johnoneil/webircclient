@@ -190,11 +190,12 @@ class IRCWebChatClient(twisted_irc.IRCClient):
   def privmsg(self, user, channel, msg):
     '''
     Invoked upon receipt of a message in channel X.
-    Here it's used to pass chat posts to video overlay via dbus
+    Since we're feeding these messages to web clients we do the following:
+    1) ensure encoding is utf-8
+    2) replace IRC type binary markup (bold, colors) with html <span> tags
     '''
-    print 'IRCWebChatClient::privmsg'
-
-    priv_message = irc.PrivMessage(user, channel, msg)
+    message = irc.markup_to_html(msg)
+    priv_message = irc.PrivMessage(user, channel, message)
     self.factory.web_frontend.update_clients(priv_message)
 
   def left(self, channel):

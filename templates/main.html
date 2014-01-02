@@ -53,20 +53,13 @@
 
 	function Update(){
         var scrollbarAtBottom = IsScrollbarAtBottom('#chat');
+        //TODO: properly wrap chat rather than clear and rebuild on update
 		$('#conversation').remove()
-
 		var arrayLength = message_list.length;
-		var newTable = document.createElement('table');
-		newTable.setAttribute("id", "conversation");
-
-		for (var i = 0, tr, td; i < arrayLength; i++) {
-    	tr = document.createElement('tr');
-    	td = document.createElement('td');
-    	td.appendChild(document.createTextNode(message_list[i]));
-    	tr.appendChild(td);
-    	newTable.appendChild(tr);
-		}
-		$('#chat').append(newTable);
+		var newTable =  $('<table class="posts" id="conversation">').appendTo('#chat'); 
+		for (var i = 0; i < arrayLength; i++) {
+            $('<tr class="post"><td class="spoke">'+message_list[i]+'</td></tr>').appendTo('#conversation');
+        }
 
         //if we were originally scrolled to the bottom of the chat
         //make sure we're following along by scrolling to the new bottom
