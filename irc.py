@@ -373,7 +373,7 @@ def markup_to_html(message):
         output += 'class="IRCBold" '
 
       if self.underline:
-        output += 'class="URCUnderline" '
+        output += 'class="IRCUnderline" '
 
       if self.italic:
         output += 'class="IRCItalic" '

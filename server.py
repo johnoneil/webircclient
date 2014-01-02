@@ -106,15 +106,6 @@ class IRCWebChatFrontend(cyclone.web.Application):
   def __init__(self, hostname='localhost', port='8888'):
     self.irc_socket = None 
 
-    #stats = Stats()
-    handlers = [
-          (r"/", MainHandler),
-          (r"/yotsuba",YotsubaFrontend),
-          (r'/simple',SimpleFrontend),
-          (r"/websocket", WebSocketHandler, dict(data=self)),
-          (r"/css/(.*)", cyclone.web.StaticFileHandler),
-          (r"/image/(.*)", cyclone.web.StaticFileHandler),
-      ]
 
     settings = dict(
       cookie_secret="43oETzKXQAGaYdkL5gEmGeJJFuYh7EQnp2XdTP1o/Vo=",
@@ -125,6 +116,17 @@ class IRCWebChatFrontend(cyclone.web.Application):
       hostname=hostname,
       port=port,
     )
+    #stats = Stats()
+    handlers = [
+          (r"/", MainHandler),
+          (r"/yotsuba",YotsubaFrontend),
+          (r'/simple',SimpleFrontend),
+          (r"/websocket", WebSocketHandler, dict(data=self)),
+          (r"/css/(.*)", cyclone.web.StaticFileHandler, {'path': settings['static_path']}),
+          (r"/image/(.*)", cyclone.web.StaticFileHandler, {'path': settings['static_path']}),
+      ]
+
+
     cyclone.web.Application.__init__(self, handlers, **settings)
 
   def set_irc_socket(self, socket):
@@ -235,7 +237,7 @@ class IRCWebChatClient(twisted_irc.IRCClient):
     self.factory.web_frontend.update_clients(user_kicked_msg)
 
   def action(self, user, channel, data):
-    action_msg = irc.ActionMessage(user, action, data)
+    action_msg = irc.ActionMessage(user, channel, data)
     self.factory.web_frontend.update_clients(action_msg)
 
   def topicUpdated(self, user, channel, new_topic):
