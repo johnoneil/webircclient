@@ -27,6 +27,10 @@ setup(name='webircclient',
         'jsonpickle',
         'argparse'
       ],
-    #scripts=[
-	#],
-      zip_safe=False)
+	package_data = {
+		'webircclient': ['templates/*.html', 'static/*.css','static/*.img'],
+	},
+    entry_points = {
+		'console_scripts': ['webirc-client=webircclient.server:main'],
+    },
+      zip_safe=True)
