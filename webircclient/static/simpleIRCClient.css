@@ -9,15 +9,14 @@ margin-left:auto;
 margin-right:auto;
 width:100%;
 color:black;
-background-color:#FFC000;
 }
-p
+.scrollable
 {
-background-color:rgb(255,0,255);
-} 
-img{
-max-height:85px;
+height:80vh;
+overflow-y: auto;
 }
+#chat img {max-height:140px; width:auto}
+
 table{
 vertical-align:top;
 }
@@ -35,22 +34,22 @@ width:100%;
 color:black;
 background-color:#FFC000;
 }
-div#channel_name
+.IRCChannelName
 {
-color: black ;
+color: #FFC000;
 font-family:arial;
 vertical-align:text-top;
 font-size: 24pt;
 }
-div#topic
+.IRCChannelTopic
 {
-color: dimgray ;
+color: white;
 font-family:arial;
 vertical-align:text-top;
 font-size: 12pt;
 }
 .chans{
-color: #FFC000 ;
+color: #FFC000;
 font-family:arial;
 vertical-align:text-top;
 font-size: 12pt;
@@ -68,7 +67,7 @@ font-family:arial;
 vertical-align:text-top;
 font-size: 12pt;
 }
-.line {
+.spoke {
 color : white;
 font-family:arial;
 vertical-align:text-top;
