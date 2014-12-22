@@ -14,6 +14,39 @@ import string
 import time
 import calendar
 
+#after http://stackoverflow.com/questions/938870/python-irc-bot-and-encoding-issue
+def irc_decode(bytes):
+  '''
+  IRC character encoding can be arbitrary. python doesn't like this
+  '''
+  try:
+    text = bytes.decode('utf-8')
+  except UnicodeDecodeError:
+    try:
+      text = bytes.decode('iso-8859-1')
+    except UnicodeDecodeError:
+      text = bytes.decode('cp1252')
+  return text
+
+
+def irc_encode(bytes):
+  '''
+  IRC character encoding can be arbitrary. python doesn't like this
+  '''
+  try:
+    text = bytes.encode('utf-8')
+  except UnicodeEncodeError:
+    try:
+      text = bytes.encode('iso-8859-1')
+    except UnicodeEncodeError:
+      text = bytes.encode('cp1252')
+  return text
+
+def strip_formatting(s, replacement=""):
+  '''Simply replace all IRC color and formatting codes with something.
+  '''
+  return re.sub(r"[\x02\x1F\x0F\x16]|\x03(\d\d?(,\d\d?)?)?", replacement, s)
+
 class JSONTagged(object):
   def __init__(self):
     self.type = self.__class__.__name__
@@ -115,8 +148,8 @@ class TopicUpdatedMessage(JSONTagged):
     super(TopicUpdatedMessage, self).__init__()
     self.user = user
     self.channel = channel
-    topic = decode(new_topic)
-    topic = markup_to_html(topic)
+    #topic = decode(new_topic)
+    topic = markup_to_html(new_topic)
     self.new_topic = topic
 
 class UserRenamedMessage(JSONTagged):
@@ -315,10 +348,17 @@ def markup_to_html(message):
   It's up to clients to have proper styles to interpret
   these <span class='X'> tags properly
   '''
+  #HACK: until this works, just strip formatting info.
+  msg = strip_formatting(message)
+  return irc_decode(msg)
+  #return decode(msg)
+  '''
   msg = decode(message)
   msg = re.sub(r'&','&amp;', msg)
   msg = re.sub(r'\<','&lt;', msg)
   msg = re.sub(r'\>','&gt;', msg)
+  '''
+
   class MarkupFunctor(object):
     def __init__(self):
       self.match_found = False

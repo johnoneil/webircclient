@@ -93,10 +93,9 @@ class WebSocketHandler(cyclone.websocket.WebSocketHandler):
     #parsed = cyclone.escape.json_decode(message)
 
   def update(self, msg):
-    #TODO: Update client via websocket
-    pickled = jsonpickle.encode(msg)
-    print 'Websocket::update_clients()' + unicode(pickled)
-    self.sendMessage(unicode(pickled))
+    '''Push json msg out to client.
+    '''
+    self.sendMessage(msg)
     
 
 
@@ -143,9 +142,11 @@ class IRCWebChatFrontend(cyclone.web.Application):
     '''
     #TODO: send json data via websocket to all listening clients.
     pickled = jsonpickle.encode(msg)
-    print 'IRCWebChatFrontend::update_clients()' + unicode(pickled)
+    #i want utf-8 encoded strings, not escaped unicode
+    m = pickled.decode('unicode-escape').encode('utf-8')
+    print m
     for client in IRCWebChatFrontend.clients:
-      client.update(msg)
+      client.update(m)
 
 
 class IRCWebChatClient(twisted_irc.IRCClient):
