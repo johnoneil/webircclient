@@ -4,7 +4,7 @@
 
 Module: server.py
 Desc: cyclone based irc bouncer to HTML5 websocket
-Author: John O'Neil
+Author: on-three
 Email: oneil.john@gmail.com
 DATE: Saturday, December 29th 2013
 
@@ -140,13 +140,12 @@ class IRCWebChatFrontend(cyclone.web.Application):
     '''
     Send message to all clients
     '''
-    #TODO: send json data via websocket to all listening clients.
     pickled = jsonpickle.encode(msg)
-    #i want utf-8 encoded strings, not escaped unicode
-    m = pickled.decode('unicode-escape').encode('utf-8')
-    print m
+    #I want JSON messages out to be utf-8 not escapted unicode.
+    json_utf8 = pickled.decode('unicode-escape').encode('utf-8')
+    print json_utf8
     for client in IRCWebChatFrontend.clients:
-      client.update(m)
+      client.update(json_utf8)
 
 
 class IRCWebChatClient(twisted_irc.IRCClient):
