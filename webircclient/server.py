@@ -102,7 +102,8 @@ class WebSocketHandler(cyclone.websocket.WebSocketHandler):
 class IRCWebChatFrontend(cyclone.web.Application):
   clients = []
 
-  def __init__(self, hostname='localhost', port='8888'):
+  def __init__(self, channels, hostname='localhost', port='8888'):
+    self._channels = channels
     self.irc_socket = None 
 
 
@@ -136,10 +137,14 @@ class IRCWebChatFrontend(cyclone.web.Application):
     #  raise SocketError('Web interface already has socket assigned. Can\'t do so twice.')
     self.irc_socket = socket
 
-  def update_clients(self, msg):
+  def update_clients(self, channel, msg):
     '''
     Send message to all clients
     '''
+    #only pass messages for channels were' configured to pass
+    if channel not in self._channels:
+      return
+
     pickled = jsonpickle.encode(msg)
     #I want JSON messages out to be utf-8 not escapted unicode.
     json_utf8 = pickled.decode('unicode-escape').encode('utf-8')
@@ -186,7 +191,7 @@ class IRCWebChatClient(twisted_irc.IRCClient):
     print 'IRCWebChatClient::joined'
 
     joined_message = irc.JoinedMessage(channel)
-    self.factory.web_frontend.update_clients(joined_message)
+    self.factory.web_frontend.update_clients(channel, joined_message)
 
   def privmsg(self, user, channel, msg):
     '''
@@ -195,57 +200,60 @@ class IRCWebChatClient(twisted_irc.IRCClient):
     1) ensure encoding is utf-8
     2) replace IRC type binary markup (bold, colors) with html <span> tags
     '''
+    #format irc message to JSON and forward it down our websocket
     message = irc.markup_to_html(msg)
     priv_message = irc.PrivMessage(user, channel, message)
-    self.factory.web_frontend.update_clients(priv_message)
+    self.factory.web_frontend.update_clients(channel, priv_message)
 
   def left(self, channel):
     left_message = irc.LeftMessage(channel)
-    self.factory.web_frontend.update_clients(left_message)
+    self.factory.web_frontend.update_clients(channel, left_message)
 
   def noticed(self, user, channel, message):
     notieced_msg = irc.NoticedMessage(user, channel, message)
-    self.factory.web_frontend.update_clients(notieced_msg)
+    self.factory.web_frontend.update_clients(channel, notieced_msg)
 
   def modeChanged(self, user, channel, set, modes, args):
     mode_changed_msg = irc.ModeChangedMessage(user, channel, set, modes, args)
-    self.factory.web_frontend.update_clients(mode_changed_msg)
+    self.factory.web_frontend.update_clients(channel, mode_changed_msg)
     
   def kickedFrom(self, channel, kicker, message):
     kicked_from_msg = irc.KickedFromMessage(channel, kicker, message)
-    self.factory.web_frontend.update_clients(kicked_from_msg)
+    self.factory.web_frontend.update_clients(channel, kicked_from_msg)
 
   def NickChanged(self, nick):
     nick_changed_msg = irc.NickChangedMessage(nick)
-    self.factory.web_frontend.update_clients(nick_changed_msg)
+    self.factory.web_frontend.update_clients(channel, nick_changed_msg)
 
   def userJoined(self, user, channel):
     user_joined_msg = irc.UserJoinedMessage(user, channel)
-    self.factory.web_frontend.update_clients(user_joined_msg)
+    self.factory.web_frontend.update_clients(channel, user_joined_msg)
 
   def userLeft(self, user, channel):
     user_left_msg = irc.UserLeftMessage(user, channel)
-    self.factory.web_frontend.update_clients(user_left_msg)
+    self.factory.web_frontend.update_clients(channel, user_left_msg)
 
   def userQuit(self, user, quit_message):
-    user_quit_msg = irc.UserQuitMessage(user, quit_message)
-    self.factory.web_frontend.update_clients(user_quit_msg)
+    pass
+    #user_quit_msg = irc.UserQuitMessage(user, quit_message)
+    #self.factory.web_frontend.update_clients(user_quit_msg)
 
   def userKicked(self, kickee, channel, kicker, message):
     user_kicked_msg = irc.UserKickedMessage(kickee, channel, kicker, message)
-    self.factory.web_frontend.update_clients(user_kicked_msg)
+    self.factory.web_frontend.update_clients(channel, user_kicked_msg)
 
   def action(self, user, channel, data):
     action_msg = irc.ActionMessage(user, channel, data)
-    self.factory.web_frontend.update_clients(action_msg)
+    self.factory.web_frontend.update_clients(channel, action_msg)
 
   def topicUpdated(self, user, channel, new_topic):
     topic_updated_msg = irc.TopicUpdatedMessage(user, channel, new_topic)
-    self.factory.web_frontend.update_clients(topic_updated_msg)
+    self.factory.web_frontend.update_clients(channel, topic_updated_msg)
 
   def userRenamed(self, oldname, newname):
-    user_renamed_msg = irc.UserRenamedMessage(oldname, newname)
-    self.factory.web_frontend.update_clients(user_renamed_msg)
+    pass
+    #user_renamed_msg = irc.UserRenamedMessage(oldname, newname)
+    #self.factory.web_frontend.update_clients(user_renamed_msg)
 
   '''
   def irc_RPL_TOPIC(self, prefix, params):
@@ -299,7 +307,7 @@ def main():
   parser = argparse.ArgumentParser(description='IRC bouncer (client) that provides HTML5 websocket client interface.')
   parser.add_argument('hostname', help='IRC server URL as domain:port (e.g. www.freenode.net:6660).', type=str)
   parser.add_argument('nickname', help='Nick to use at signon. Multiple nicks not yet supported.', type=str)
-  parser.add_argument('channel', help='Channel to join on server. Only supporting one channel presently.', type=str)
+  parser.add_argument('channel', help='Channels to relay to clients from server.', type=str,  nargs='*')
   parser.add_argument('-p','--server_port', help='Port this server will service html client requests on. NOT the IRC server port this server connects to.', type=int, default=8888)
   parser.add_argument('-u', '--username', help='Username this server uses at IRC server signon.', type=str, default='')
   parser.add_argument('-r', '--realname', help='Realname this server uses at IRC server signon.', type=str, default='')
@@ -326,17 +334,19 @@ def main():
   IRCWebChatClient.username = credentials['username']
   IRCWebChatClient.password = credentials['password']
     
-  channels = (args.channel,)
+  channels = args.channel
+  for channel in channels:
+    print("Relaying channel : \"{channel}\"".format(channel=channel))
 
   network = {
     'host': hostname,
     'port': port,
     'ssl': args.ssl,
     'identity': credentials,
-    'autojoin': channels
+    'autojoin': channels,
   }
 
-  web_frontend = IRCWebChatFrontend()
+  web_frontend = IRCWebChatFrontend(channels)
   factory = IRCWebChatClientFactory(hostname, network, web_frontend)
   if args.ssl:
     reactor.connectSSL(hostname, port, factory, ssl.ClientContextFactory())
