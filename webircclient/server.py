@@ -147,10 +147,10 @@ class IRCWebChatFrontend(cyclone.web.Application):
 
     pickled = jsonpickle.encode(msg)
     #I want JSON messages out to be utf-8 not escapted unicode.
-    json_utf8 = pickled.decode('unicode-escape').encode('utf-8')
-    print json_utf8
+    #json_utf8 = pickled.decode('unicode-escape').encode('utf-8')
+    print pickled #json_utf8
     for client in IRCWebChatFrontend.clients:
-      client.update(json_utf8)
+      client.update(pickled)#json_utf8)
 
 
 class IRCWebChatClient(twisted_irc.IRCClient):
